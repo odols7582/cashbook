@@ -558,7 +558,7 @@ function renderQuote(){
     +'<div class="qmeta-field"><label class="qmeta-label">담당자</label><input class="qmeta-input" id="qm-name" placeholder="홍길동" oninput="refreshQ()"></div>'
     +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" placeholder="010-0000-0000" oninput="refreshQ()"></div>'
     +'</div>'
-    +'<div class="qmode"><button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM('sell')">💳 판매 견적</button><button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM('monthly')">📅 월 관리비 견적</button></div>'
+    +'<div class="qmode"><button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button><button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button></div>'
     +'<div class="qitems" id="qi-panel">'+qContent.items+'</div>'
     +(qContent.hasItems?'<div class="qtotal">'+qContent.total+'</div>':"")
     +'<div class="qactions"><button class="qbtn-p" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button><button class="qbtn-r" onclick="resetQ()">↺ 초기화</button></div>'
