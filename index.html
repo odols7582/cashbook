@@ -79,8 +79,9 @@ table.dt tfoot td{background:#F5F5EF;border-top:2px solid var(--line);padding:9p
 .ib.del:hover{background:#FFEBEA;color:var(--red)}
 .ec{text-align:center;padding:50px 20px!important;color:var(--dim);font-size:13px}
 .fhint{max-width:1280px;margin:12px auto 0;font-size:12px;color:var(--dim);text-align:center;line-height:1.6}
-/* 리포트 */
 /* 수수료 계산기 */
+.panel{max-width:1280px;margin:0 auto 12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.ptitle{font-size:14px;font-weight:700;margin:0 0 12px}
 .cform{max-width:600px;margin:0 auto 18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px}
 .cform h3{font-size:16px;font-weight:700;margin:0 0 18px}
 .cf{margin-bottom:14px}
@@ -102,7 +103,7 @@ table.dt tfoot td{background:#F5F5EF;border-top:2px solid var(--line);padding:9p
 .ri{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .ri .rl{font-size:11px;color:var(--dim);font-weight:500;margin-bottom:3px}
 .ri .rv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
-.rnote{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400E;line-height:1.6}
+.rnote{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400E;line-height:1.6;max-width:600px;margin:0 auto 12px}
 .rtwrap{max-width:1280px;margin:18px auto 0}
 .rtwrap h3{font-size:13px;font-weight:700;margin:0 0 8px;color:var(--soft)}
 .rtable{width:100%;border-collapse:collapse;font-size:11px;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -135,7 +136,7 @@ table.dt tfoot td{background:#F5F5EF;border-top:2px solid var(--line);padding:9p
 .td.ov{border-left:3px solid var(--red)}
 .tck{width:22px;height:22px;border:2px solid var(--line);border-radius:6px;background:var(--paper);cursor:pointer;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .tck:hover{border-color:var(--accent)}
-.tbody{min-width:0}
+.tbody2{min-width:0}
 .thead2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tprio{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
 .ttitle{font-size:14px;font-weight:600;color:var(--ink)}
@@ -177,7 +178,6 @@ input.fiinput{display:none}
   .bnav{display:block}
   .ttl{font-size:20px}
   .sval{font-size:16px}
-  .cform{margin:0 0 14px}
   .rgrid{grid-template-columns:1fr}
 }
 </style>
@@ -185,139 +185,41 @@ input.fiinput{display:none}
 <body>
 <div id="sbar" class="sync-bar ing"><div class="sdot"></div><span id="stxt">Firebase 연결 중…</span></div>
 <div id="root"><div class="loading"><div class="spinner"></div><div class="ltext">데이터 불러오는 중…</div></div></div>
-
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getDatabase,ref,onValue,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const FC={
-  apiKey:"AIzaSyAsKbG2gI8_IS4L7iENPcZ0PIEdjhY2210",
-  authDomain:"my-cashbook-abdb7.firebaseapp.com",
-  databaseURL:"https://my-cashbook-abdb7-default-rtdb.firebaseio.com",
-  projectId:"my-cashbook-abdb7",
-  storageBucket:"my-cashbook-abdb7.firebasestorage.app",
-  messagingSenderId:"922322436947",
-  appId:"1:922322436947:web:03c9a6aedcefda9d9157a6"
-};
+const FC={apiKey:"AIzaSyAsKbG2gI8_IS4L7iENPcZ0PIEdjhY2210",authDomain:"my-cashbook-abdb7.firebaseapp.com",databaseURL:"https://my-cashbook-abdb7-default-rtdb.firebaseio.com",projectId:"my-cashbook-abdb7",storageBucket:"my-cashbook-abdb7.firebasestorage.app",messagingSenderId:"922322436947",appId:"1:922322436947:web:03c9a6aedcefda9d9157a6"};
 const app=initializeApp(FC);
 const db=getDatabase(app);
 
-// ── 유틸 ──────────────────────────────────────
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function fmt(n){return(n==null||isNaN(n)||n===""?"":Number(n).toLocaleString("ko-KR"))}
 function today(){return new Date().toISOString().slice(0,10)}
 function mk(d){return(d||"").slice(0,7)}
-function esc(s){if(s==null)return"";return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function esc(s){if(s==null)return"";return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 
-// ── 카테고리 ──────────────────────────────────
-const DC=[
-  {id:"sale",label:"매출",color:"#0A7D3F"},
-  {id:"capital",label:"자본금",color:"#1A56DB"},
-  {id:"loan",label:"차입금",color:"#7C3AED"},
-  {id:"refund",label:"환불/환급",color:"#0891B2"},
-  {id:"etc_in",label:"기타입금",color:"#64748B"}
-];
-const WC=[
-  {id:"purchase",label:"매입(상품)",color:"#C53030"},
-  {id:"rent",label:"임대료",color:"#DC2626"},
-  {id:"comm",label:"통신비",color:"#EA580C"},
-  {id:"util",label:"공과금",color:"#D97706"},
-  {id:"salary",label:"급여",color:"#B91C1C"},
-  {id:"tax",label:"세금/공과",color:"#991B1B"},
-  {id:"office",label:"사무용품",color:"#9333EA"},
-  {id:"mkt",label:"광고/마케팅",color:"#DB2777"},
-  {id:"fee",label:"수수료",color:"#0F766E"},
-  {id:"etc_out",label:"기타지출",color:"#64748B"}
-];
+const DC=[{id:"sale",label:"매출",color:"#0A7D3F"},{id:"capital",label:"자본금",color:"#1A56DB"},{id:"loan",label:"차입금",color:"#7C3AED"},{id:"refund",label:"환불/환급",color:"#0891B2"},{id:"etc_in",label:"기타입금",color:"#64748B"}];
+const WC=[{id:"purchase",label:"매입(상품)",color:"#C53030"},{id:"rent",label:"임대료",color:"#DC2626"},{id:"comm",label:"통신비",color:"#EA580C"},{id:"util",label:"공과금",color:"#D97706"},{id:"salary",label:"급여",color:"#B91C1C"},{id:"tax",label:"세금/공과",color:"#991B1B"},{id:"office",label:"사무용품",color:"#9333EA"},{id:"mkt",label:"광고/마케팅",color:"#DB2777"},{id:"fee",label:"수수료",color:"#0F766E"},{id:"etc_out",label:"기타지출",color:"#64748B"}];
 const AC=[...DC,...WC];
 const TP={high:{label:"긴급",color:"#C53030",bg:"#FEF2F2"},mid:{label:"보통",color:"#D97706",bg:"#FFFBEB"},low:{label:"여유",color:"#64748B",bg:"#F8FAFC"}};
 
-// ── KSNET 수수료 테이블 ────────────────────────
+/* KSNET 수수료 테이블 */
 const KR=["10,001~15,000","15,001~20,000","20,001~25,000","25,001~30,000","30,001~35,000","35,001~40,000","40,001~45,000","45,001~50,000","50,001~55,000","55,001~60,000","60,001~65,000","65,001~70,000","70,001~75,000","75,001~80,000","80,001~85,000","85,001~90,000","90,001~95,000","95,001~100,000","100,001~105,000","105,001~111,000","110,001~115,000","115,001~120,000","120,001~125,000","125,001~130,000","130,001~140,000","135,001~140,000","140,001~145,000","145,001~150,000","150,001~155,000","155,001~160,000","160,001~165,000","165,001~170,000","170,001~175,000","175,001~180,000","180,001~185,000","185,001~190,000","190,001~195,000","195,001~200,000","200,001~"];
 const KRT=["0.3%~","0.4%~","0.5%~","0.6%","0.7%","0.8%","0.9%~","1.0%~","1.1%~","1.2%~","1.3%~","1.4%~","1.5%~","1.6%~","1.7%~","1.8%~","1.9%~","2.0%~","2.1%~"];
-const KT=[
-[14.1,15.4,16.6,17.7,18.9,20.2,21.4,22.7,23.9,25.2,26.4,27.7,28.9,30.1,31.4,32.7,33.9,34.8,35.7],
-[15.7,17.5,19.2,20.6,22.4,24.1,25.9,27.6,29.4,31.1,32.9,34.6,36.4,38.1,39.9,41.6,43.4,44.7,45.9],
-[17.5,19.7,22.0,23.8,26.1,28.3,30.6,32.8,35.1,37.3,39.6,41.8,44.0,46.3,48.5,50.8,53.1,54.7,56.3],
-[19.0,21.8,24.5,26.8,29.6,32.3,35.0,37.8,40.5,43.3,46.0,48.8,51.5,54.3,57.0,59.8,62.6,64.6,66.5],
-[21.0,24.3,27.5,30.2,33.4,36.7,39.9,43.2,46.4,49.7,52.9,56.2,59.4,62.6,65.9,69.2,72.5,74.8,77.1],
-[22.6,26.3,30.1,33.2,36.9,40.7,44.4,48.2,51.9,55.6,59.4,63.1,66.9,70.6,74.4,78.2,82.0,84.7,87.3],
-[24.2,28.4,32.6,36.2,40.4,44.6,48.9,53.1,57.4,61.6,65.9,70.1,74.3,78.6,82.8,87.2,91.5,94.5,97.4],
-[25.7,30.5,35.2,39.1,43.9,48.6,53.4,58.1,62.8,67.6,72.3,77.1,81.8,86.6,91.3,96.1,100.9,104.4,107.6],
-[33.6,39.1,44.5,49.1,54.5,60.0,65.4,70.9,76.3,81.8,87.3,92.7,98.2,103.6,109.1,114.7,120.2,124.2,127.9],
-[35.3,41.3,47.2,52.2,58.1,64.1,70.1,76.1,82.0,88.0,94.0,100.0,106.0,111.9,117.9,124.0,130.1,134.4,138.5],
-[36.9,43.4,49.9,55.3,61.8,68.3,74.8,81.3,87.8,94.2,100.7,107.2,113.7,120.2,126.7,133.4,140.0,144.7,149.1],
-[38.5,45.5,52.6,58.4,65.4,72.4,79.4,86.4,93.5,100.5,107.5,114.5,121.5,128.5,135.6,142.7,149.8,154.9,159.8],
-[40.1,47.7,55.2,61.5,69.0,76.5,84.1,91.6,99.2,106.7,114.2,121.8,129.3,136.8,144.4,152.1,159.7,165.2,170.4],
-[41.8,49.8,57.9,64.6,72.6,80.7,88.7,96.8,104.9,112.9,121.0,129.0,137.1,145.1,153.2,161.5,169.6,175.4,181.0],
-[43.4,52.0,60.6,67.7,76.2,84.8,93.4,102.0,110.6,119.1,127.7,136.3,144.9,153.4,162.0,170.8,179.5,185.7,191.6],
-[45.0,54.1,63.2,70.8,79.9,88.9,98.1,107.1,116.3,125.4,134.4,143.5,152.6,161.7,170.8,180.2,189.3,195.9,202.2],
-[46.7,56.3,65.9,73.9,83.5,93.1,102.7,112.3,122.0,131.6,141.2,150.8,160.4,170.0,179.7,189.5,199.2,206.2,212.8],
-[49.9,60.6,71.2,80.1,90.7,101.4,112.0,122.7,133.4,144.0,154.7,165.3,176.0,186.6,197.3,208.2,219.0,226.7,234.0],
-[51.6,62.7,73.9,82.9,94.3,105.3,116.7,127.9,139.1,150.4,161.7,172.6,183.8,194.9,206.2,217.6,228.6,236.9,244.6],
-[53.2,64.9,76.6,86.3,98.0,109.7,121.4,133.1,144.8,156.5,168.1,179.8,191.5,203.2,214.9,226.9,238.7,247.2,255.3],
-[54.8,67.0,79.3,89.4,101.6,113.8,126.0,138.2,150.5,162.7,174.9,187.1,199.3,211.5,223.8,236.3,248.6,257.4,265.9],
-[56.5,69.2,81.9,92.5,105.2,112.0,130.7,143.4,156.2,168.9,181.6,194.4,207.1,219.8,232.5,245.6,258.7,267.6,276.5],
-[58.1,71.3,84.6,95.6,108.8,122.1,135.3,148.6,161.9,175.1,188.4,201.6,214.9,228.1,241.4,255.0,268.4,278.0,287.1],
-[59.7,73.5,87.3,98.7,112.4,126.1,140.0,153.5,167.6,181.3,195.1,208.0,221.7,236.4,250.2,264.3,273.3,287.3,297.7],
-[61.3,75.6,89.9,101.8,116.1,130.4,144.7,159.0,173.3,187.6,201.8,216.1,230.4,244.7,259.0,273.7,288.1,298.5,308.3],
-[63.0,77.9,92.6,104.9,119.7,134.9,149.3,163.4,179.0,193.3,208.6,223.8,238.2,253.0,267.4,283.0,298.3,308.7,317.9],
-[64.6,79.9,95.3,108.0,123.3,138.6,154.0,169.3,184.7,200.0,215.3,230.7,246.0,261.3,276.7,292.4,307.9,319.0,329.5],
-[66.2,82.1,98.0,111.1,126.9,142.8,158.6,174.5,190.4,206.2,222.1,237.9,253.8,269.6,285.5,301.7,317.7,329.2,340.2],
-[67.9,84.2,100.6,114.2,130.6,146.9,163.3,179.7,196.1,212.4,228.8,245.2,261.6,277.9,294.3,311.1,327.6,339.5,350.8],
-[69.5,86.4,103.3,117.3,134.2,151.1,168.0,184.9,201.8,218.7,235.5,252.4,269.3,286.2,303.1,320.4,337.5,349.7,361.4],
-[71.1,88.5,106.0,120.4,137.8,155.2,172.6,190.0,207.5,224.2,242.3,259.7,277.1,294.5,312.0,329.8,347.4,360.0,372.0],
-[72.8,90.7,108.6,123.5,141.4,159.3,177.3,195.2,213.2,231.1,249.0,267.0,284.9,302.8,320.8,339.1,357.2,370.2,382.6],
-[74.4,92.8,111.3,126.5,145.0,163.4,181.9,200.4,218.9,237.3,255.8,274.2,292.7,311.1,329.6,348.5,367.2,380.5,393.2],
-[76.0,95.0,114.0,129.7,148.7,167.6,186.6,205.6,224.6,243.5,262.5,281.5,300.5,319.4,338.4,357.8,377.0,390.7,403.8],
-[77.7,97.2,116.3,132.8,152.3,171.8,191.3,210.8,230.3,248.9,269.3,288.7,308.2,327.6,347.1,367.2,386.8,401.4,414.4],
-[79.3,99.3,119.3,135.9,155.9,175.9,195.9,215.9,236.0,256.0,276.0,296.0,316.0,336.0,356.1,376.5,396.8,411.2,425.0],
-[80.9,101.5,122.0,139.0,159.5,180.1,200.6,221.1,241.7,262.2,282.7,303.3,323.8,344.3,364.9,385.9,406.6,421.5,435.7],
-[83.0,103.9,124.7,140.9,162.0,183.3,204.5,225.8,246.2,267.1,287.9,308.8,329.6,350.5,371.3,392.7,413.7,428.8,435.2],
-[83.0,103.9,124.7,140.9,162.0,183.3,204.5,225.8,246.2,267.1,287.9,308.8,329.6,350.5,371.3,392.7,413.7,428.8,435.2]
-];
-const BT=[
-  {id:"mart",label:"마트/편의점",avg:0.5,icon:"🛒"},
-  {id:"food",label:"음식점/카페",avg:0.7,icon:"🍽️"},
-  {id:"nail",label:"네일/뷰티",avg:1.0,icon:"💅"},
-  {id:"hair",label:"헤어샵",avg:1.0,icon:"✂️"},
-  {id:"hospital",label:"병원/약국",avg:1.2,icon:"🏥"},
-  {id:"clothes",label:"의류/잡화",avg:1.3,icon:"👗"},
-  {id:"edu",label:"학원/교육",avg:1.5,icon:"📚"},
-  {id:"lodging",label:"숙박",avg:1.8,icon:"🏨"},
-  {id:"etc",label:"기타",avg:1.5,icon:"📦"}
-];
+const KT=[[14.1,15.4,16.6,17.7,18.9,20.2,21.4,22.7,23.9,25.2,26.4,27.7,28.9,30.1,31.4,32.7,33.9,34.8,35.7],[15.7,17.5,19.2,20.6,22.4,24.1,25.9,27.6,29.4,31.1,32.9,34.6,36.4,38.1,39.9,41.6,43.4,44.7,45.9],[17.5,19.7,22.0,23.8,26.1,28.3,30.6,32.8,35.1,37.3,39.6,41.8,44.0,46.3,48.5,50.8,53.1,54.7,56.3],[19.0,21.8,24.5,26.8,29.6,32.3,35.0,37.8,40.5,43.3,46.0,48.8,51.5,54.3,57.0,59.8,62.6,64.6,66.5],[21.0,24.3,27.5,30.2,33.4,36.7,39.9,43.2,46.4,49.7,52.9,56.2,59.4,62.6,65.9,69.2,72.5,74.8,77.1],[22.6,26.3,30.1,33.2,36.9,40.7,44.4,48.2,51.9,55.6,59.4,63.1,66.9,70.6,74.4,78.2,82.0,84.7,87.3],[24.2,28.4,32.6,36.2,40.4,44.6,48.9,53.1,57.4,61.6,65.9,70.1,74.3,78.6,82.8,87.2,91.5,94.5,97.4],[25.7,30.5,35.2,39.1,43.9,48.6,53.4,58.1,62.8,67.6,72.3,77.1,81.8,86.6,91.3,96.1,100.9,104.4,107.6],[33.6,39.1,44.5,49.1,54.5,60.0,65.4,70.9,76.3,81.8,87.3,92.7,98.2,103.6,109.1,114.7,120.2,124.2,127.9],[35.3,41.3,47.2,52.2,58.1,64.1,70.1,76.1,82.0,88.0,94.0,100.0,106.0,111.9,117.9,124.0,130.1,134.4,138.5],[36.9,43.4,49.9,55.3,61.8,68.3,74.8,81.3,87.8,94.2,100.7,107.2,113.7,120.2,126.7,133.4,140.0,144.7,149.1],[38.5,45.5,52.6,58.4,65.4,72.4,79.4,86.4,93.5,100.5,107.5,114.5,121.5,128.5,135.6,142.7,149.8,154.9,159.8],[40.1,47.7,55.2,61.5,69.0,76.5,84.1,91.6,99.2,106.7,114.2,121.8,129.3,136.8,144.4,152.1,159.7,165.2,170.4],[41.8,49.8,57.9,64.6,72.6,80.7,88.7,96.8,104.9,112.9,121.0,129.0,137.1,145.1,153.2,161.5,169.6,175.4,181.0],[43.4,52.0,60.6,67.7,76.2,84.8,93.4,102.0,110.6,119.1,127.7,136.3,144.9,153.4,162.0,170.8,179.5,185.7,191.6],[45.0,54.1,63.2,70.8,79.9,88.9,98.1,107.1,116.3,125.4,134.4,143.5,152.6,161.7,170.8,180.2,189.3,195.9,202.2],[46.7,56.3,65.9,73.9,83.5,93.1,102.7,112.3,122.0,131.6,141.2,150.8,160.4,170.0,179.7,189.5,199.2,206.2,212.8],[49.9,60.6,71.2,80.1,90.7,101.4,112.0,122.7,133.4,144.0,154.7,165.3,176.0,186.6,197.3,208.2,219.0,226.7,234.0],[51.6,62.7,73.9,82.9,94.3,105.3,116.7,127.9,139.1,150.4,161.7,172.6,183.8,194.9,206.2,217.6,228.6,236.9,244.6],[53.2,64.9,76.6,86.3,98.0,109.7,121.4,133.1,144.8,156.5,168.1,179.8,191.5,203.2,214.9,226.9,238.7,247.2,255.3],[54.8,67.0,79.3,89.4,101.6,113.8,126.0,138.2,150.5,162.7,174.9,187.1,199.3,211.5,223.8,236.3,248.6,257.4,265.9],[56.5,69.2,81.9,92.5,105.2,112.0,130.7,143.4,156.2,168.9,181.6,194.4,207.1,219.8,232.5,245.6,258.7,267.6,276.5],[58.1,71.3,84.6,95.6,108.8,122.1,135.3,148.6,161.9,175.1,188.4,201.6,214.9,228.1,241.4,255.0,268.4,278.0,287.1],[59.7,73.5,87.3,98.7,112.4,126.1,140.0,153.5,167.6,181.3,195.1,208.0,221.7,236.4,250.2,264.3,273.3,287.3,297.7],[61.3,75.6,89.9,101.8,116.1,130.4,144.7,159.0,173.3,187.6,201.8,216.1,230.4,244.7,259.0,273.7,288.1,298.5,308.3],[63.0,77.9,92.6,104.9,119.7,134.9,149.3,163.4,179.0,193.3,208.6,223.8,238.2,253.0,267.4,283.0,298.3,308.7,317.9],[64.6,79.9,95.3,108.0,123.3,138.6,154.0,169.3,184.7,200.0,215.3,230.7,246.0,261.3,276.7,292.4,307.9,319.0,329.5],[66.2,82.1,98.0,111.1,126.9,142.8,158.6,174.5,190.4,206.2,222.1,237.9,253.8,269.6,285.5,301.7,317.7,329.2,340.2],[67.9,84.2,100.6,114.2,130.6,146.9,163.3,179.7,196.1,212.4,228.8,245.2,261.6,277.9,294.3,311.1,327.6,339.5,350.8],[69.5,86.4,103.3,117.3,134.2,151.1,168.0,184.9,201.8,218.7,235.5,252.4,269.3,286.2,303.1,320.4,337.5,349.7,361.4],[71.1,88.5,106.0,120.4,137.8,155.2,172.6,190.0,207.5,224.2,242.3,259.7,277.1,294.5,312.0,329.8,347.4,360.0,372.0],[72.8,90.7,108.6,123.5,141.4,159.3,177.3,195.2,213.2,231.1,249.0,267.0,284.9,302.8,320.8,339.1,357.2,370.2,382.6],[74.4,92.8,111.3,126.5,145.0,163.4,181.9,200.4,218.9,237.3,255.8,274.2,292.7,311.1,329.6,348.5,367.2,380.5,393.2],[76.0,95.0,114.0,129.7,148.7,167.6,186.6,205.6,224.6,243.5,262.5,281.5,300.5,319.4,338.4,357.8,377.0,390.7,403.8],[77.7,97.2,116.3,132.8,152.3,171.8,191.3,210.8,230.3,248.9,269.3,288.7,308.2,327.6,347.1,367.2,386.8,401.4,414.4],[79.3,99.3,119.3,135.9,155.9,175.9,195.9,215.9,236.0,256.0,276.0,296.0,316.0,336.0,356.1,376.5,396.8,411.2,425.0],[80.9,101.5,122.0,139.0,159.5,180.1,200.6,221.1,241.7,262.2,282.7,303.3,323.8,344.3,364.9,385.9,406.6,421.5,435.7],[83.0,103.9,124.7,140.9,162.0,183.3,204.5,225.8,246.2,267.1,287.9,308.8,329.6,350.5,371.3,392.7,413.7,428.8,435.2],[83.0,103.9,124.7,140.9,162.0,183.3,204.5,225.8,246.2,267.1,287.9,308.8,329.6,350.5,371.3,392.7,413.7,428.8,435.2]];
+const BT=[{id:"mart",label:"마트/편의점",avg:0.5,icon:"🛒"},{id:"food",label:"음식점/카페",avg:0.7,icon:"🍽️"},{id:"nail",label:"네일/뷰티",avg:0.5,icon:"💅"},{id:"hair",label:"헤어샵",avg:0.5,icon:"✂️"},{id:"hospital",label:"병원/약국",avg:1.2,icon:"🏥"},{id:"clothes",label:"의류/잡화",avg:1.0,icon:"👗"},{id:"edu",label:"학원/교육",avg:1.15,icon:"📚"},{id:"lodging",label:"숙박",avg:1.45,icon:"🏨"},{id:"etc",label:"기타",avg:1.0,icon:"📦"}];
 
-// ── 초기 데이터 ───────────────────────────────
-const IV=[
-  {id:uid(),date:"2026-04-02",deposit:505000,withdraw:null,category:"capital",taxInvoice:false,memo:"고정비 지출용"},
-  {id:uid(),date:"2026-04-15",deposit:null,withdraw:4400,category:"fee",taxInvoice:false,memo:"하나은행 인증서"},
-  {id:uid(),date:"2026-04-21",deposit:null,withdraw:9690,category:"comm",taxInvoice:false,memo:"통신비"},
-  {id:uid(),date:"2026-05-21",deposit:null,withdraw:27740,category:"comm",taxInvoice:false,memo:"통신비"},
-  {id:uid(),date:"2026-05-21",deposit:null,withdraw:88000,category:"fee",taxInvoice:false,memo:"범용인증서 / 1년"}
-];
+const IV=[{id:uid(),date:"2026-04-02",deposit:505000,withdraw:null,category:"capital",taxInvoice:false,memo:"고정비 지출용"},{id:uid(),date:"2026-04-15",deposit:null,withdraw:4400,category:"fee",taxInvoice:false,memo:"하나은행 인증서"},{id:uid(),date:"2026-04-21",deposit:null,withdraw:9690,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:27740,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:88000,category:"fee",taxInvoice:false,memo:"범용인증서 / 1년"}];
 
-// ── 상태 ──────────────────────────────────────
-const S={
-  tab:"ledger",
-  rows:[],todos:[],
-  calc:{bizType:null,rateIdx:null,rangeIdx:null,count:""},
-  ledger:{fm:"all",fc:"all",search:""},
-  todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},
-  modal:null
-};
+const S={tab:"ledger",rows:[],todos:[],calc:{bizType:null,rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null};
 
-// ── Firebase 저장 ──────────────────────────────
 const ST={};
-function fbSave(path,data,delay){
-  delay=delay||400;
+function fbSave(path,data){
   clearTimeout(ST[path]);
   ST[path]=setTimeout(async function(){
-    try{
-      await set(ref(db,path),data);
-      setSbar("ok");
-    }catch(e){setSbar("err");console.error(e);}
-  },delay);
+    try{await set(ref(db,path),data);setSbar("ok");}
+    catch(e){setSbar("err");console.error(e);}
+  },400);
 }
 function saveRows(){fbSave("cashbook/rows",S.rows);}
 function saveTodos(){fbSave("cashbook/todos",S.todos);}
@@ -331,7 +233,6 @@ function setSbar(st){
   else t.textContent="오프라인 · 네트워크 연결을 확인하세요";
 }
 
-// ── Firebase 초기화 ────────────────────────────
 async function init(){
   try{
     var snap=await get(ref(db,"cashbook"));
@@ -347,7 +248,6 @@ async function init(){
       S.todos=sn.val()?Object.values(sn.val()):[];
       render();
     });
-    });
     setSbar("ok");
   }catch(e){
     setSbar("err");
@@ -357,32 +257,23 @@ async function init(){
   }
 }
 
-// ── 렌더링 ────────────────────────────────────
 function render(){
   var root=document.getElementById("root");
   if(!root)return;
   var ac=S.todos.filter(function(t){return!t.done;}).length;
-  var tabs=[
-    {id:"ledger",icon:"📒",label:"입출금장부"},
-    {id:"calc",icon:"🧮",label:"수수료 계산"},
-    {id:"todo",icon:"✓",label:"할일관리",badge:ac}
-  ];
-  var tabHtml=tabs.map(function(t){
-    return '<button class="'+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')">'+t.icon+" "+t.label+(t.badge?'<span class="badge">'+t.badge+'</span>':"")+"</button>";
-  }).join("");
-  var bnav=tabs.map(function(t){
-    return '<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')"><span>'+t.icon+"</span>"+(t.label.slice(0,4))+(t.badge?'<span class="badge">'+t.badge+'</span>':"")+"</button>";
-  }).join("");
+  var tabs=[{id:"ledger",icon:"📒",label:"입출금장부"},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"todo",icon:"✓",label:"할일관리",badge:ac}];
+  var tabHtml=tabs.map(function(t){return'<button class="'+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')">'+t.icon+" "+t.label+(t.badge?'<span class="badge">'+t.badge+"</span>":"")+"</button>";}).join("");
+  var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')"><span>'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="badge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var body="";
   if(S.tab==="ledger")body=renderLedger();
   else if(S.tab==="calc")body=renderCalc();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
-  root.innerHTML='<div class="root"><header><div class="trow"><div><h1 class="ttl">사업자 장부</h1><p class="sub">POS·VAN 대리점 · 법인 통장 관리</p></div><button class="bg" onclick="openBackup()" style="font-size:12px;padding:6px 12px">💾 백업</button></div><nav class="tabs">'+tabHtml+"</nav></header>"+body+'</div><nav class="bnav"><div class="bnavi">'+bnav+"</div></nav>";
+  root.innerHTML='<div class="root"><header><div class="trow"><div><h1 class="ttl">사업자 장부</h1><p class="sub">POS·VAN 대리점 · 법인 통장 관리</p></div><button class="bg" onclick="openBackup()" style="font-size:12px;padding:6px 12px">💾 백업</button></div><nav class="tabs">'+tabHtml+'</nav></header>'+body+'</div><nav class="bnav"><div class="bnavi">'+bnav+"</div></nav>";
 }
 window.sw=function(t){S.tab=t;render();};
 
-// ── 입출금장부 ────────────────────────────────
+/* ── 입출금장부 ─────────────────────────── */
 function renderLedger(){
   var fm=S.ledger.fm,fc=S.ledger.fc,q=S.ledger.search;
   var sorted=[].concat(S.rows).sort(function(a,b){return(a.date||"").localeCompare(b.date||"")||a.id.localeCompare(b.id);});
@@ -400,25 +291,13 @@ function renderLedger(){
   var cb=wb.length>0?wb[wb.length-1].balance:0;
   var tp=S.rows.filter(function(r){return(r.deposit||r.withdraw)&&!r.taxInvoice;}).length;
   var mOpts=months.map(function(m){return'<option value="'+m+'" '+(fm===m?"selected":"")+'>'+m.replace("-",".")+'월</option>';}).join("");
-  var depOpts=DC.map(function(c){return'<option value="'+c.id+'" '+(fc===c.id?"selected":"")+'>'+c.label+"</option>";}).join("");
+  var dOpts=DC.map(function(c){return'<option value="'+c.id+'" '+(fc===c.id?"selected":"")+'>'+c.label+"</option>";}).join("");
   var wOpts=WC.map(function(c){return'<option value="'+c.id+'" '+(fc===c.id?"selected":"")+'>'+c.label+"</option>";}).join("");
-  var rows=fil.length===0
-    ?'<tr><td colspan="8" class="ec">'+(S.rows.length===0?"거래 내역이 없습니다.":"조건에 맞는 거래가 없습니다.")+"</td></tr>"
-    :fil.map(renderRow).join("");
-  var foot=fil.length>0?'<tfoot><tr><td><b>소계</b></td><td class="r" style="color:#0A7D3F"><b>'+fmt(td)+"</b></td>"+'<td class="r" style="color:#C53030"><b>'+fmt(tw)+"</b></td>"+'<td class="r"><b>'+fmt(td-tw)+"</b></td><td colspan='4'></td></tr></tfoot>":"";
-  return '<div class="summary"><div class="stat"><span class="slabel">총 입금</span><span class="sval" style="color:#0A7D3F">+'+fmt(td)+'원</span></div>'
-    +'<div class="stat"><span class="slabel">총 출금</span><span class="sval" style="color:#C53030">-'+fmt(tw)+'원</span></div>'
-    +'<div class="stat smain"><span class="slabel">현재 잔액</span><span class="sval" style="color:'+(cb>=0?"#1A56DB":"#C53030")+'">'+fmt(cb)+'원</span></div>'
-    +'<div class="stat" style="'+(tp>0?"border-color:#F59E0B;background:#FFFBEB":"")+'"><span class="slabel">세금계산서 미처리</span><span class="sval" style="color:'+(tp>0?"#D97706":"#64748B")+';font-size:16px">'+tp+'건</span></div></div>'
-    +'<div class="toolbar"><button class="bp" onclick="addRow()">＋ 새 거래</button>'
-    +'<select class="sel" onchange="setFM(this.value)"><option value="all" '+(fm==="all"?"selected":"")+'">전체 기간</option>'+mOpts+"</select>"
-    +'<select class="sel" onchange="setFC(this.value)"><option value="all" '+(fc==="all"?"selected":"")+'>전체 카테고리</option><optgroup label="입금">'+depOpts+'</optgroup><optgroup label="출금">'+wOpts+"</optgroup></select>"
-    +'<div class="srch"><input placeholder="비고 검색…" value="'+esc(q)+'" oninput="setQ(this.value)">'+(q?'<button class="xbtn" onclick="setQ(\'\')">×</button>':"")+"</div>"
-    +'<button class="bg" onclick="expCSV()">📥 CSV</button><div class="cnt">'+fil.length+'건</div></div>'
-    +'<div class="twrap"><table class="dt"><thead><tr>'
-    +'<th style="width:110px">날짜</th><th class="r" style="width:110px">입금</th><th class="r" style="width:110px">출금</th><th class="r" style="width:110px">잔액</th>'
-    +'<th style="width:110px">카테고리</th><th class="c" style="width:70px">세금계산서</th><th>비고</th><th style="width:60px"></th>'
-    +'</tr></thead><tbody>'+rows+"</tbody>"+foot+"</table></div>"
+  var rows=fil.length===0?'<tr><td colspan="8" class="ec">'+(S.rows.length===0?"거래 내역이 없습니다.":"조건에 맞는 거래가 없습니다.")+"</td></tr>":fil.map(renderRow).join("");
+  var foot=fil.length>0?'<tfoot><tr><td><b>소계</b></td><td class="r" style="color:#0A7D3F"><b>'+fmt(td)+'</b></td><td class="r" style="color:#C53030"><b>'+fmt(tw)+'</b></td><td class="r"><b>'+fmt(td-tw)+"</b></td><td colspan='4'></td></tr></tfoot>":"";
+  return '<div class="summary"><div class="stat"><span class="slabel">총 입금</span><span class="sval" style="color:#0A7D3F">+'+fmt(td)+'원</span></div><div class="stat"><span class="slabel">총 출금</span><span class="sval" style="color:#C53030">-'+fmt(tw)+'원</span></div><div class="stat smain"><span class="slabel">현재 잔액</span><span class="sval" style="color:'+(cb>=0?"#1A56DB":"#C53030")+'">'+fmt(cb)+'원</span></div><div class="stat" style="'+(tp>0?"border-color:#F59E0B;background:#FFFBEB":"")+'"><span class="slabel">세금계산서 미처리</span><span class="sval" style="color:'+(tp>0?"#D97706":"#64748B")+';font-size:16px">'+tp+'건</span></div></div>'
+    +'<div class="toolbar"><button class="bp" onclick="addRow()">＋ 새 거래</button><select class="sel" onchange="setFM(this.value)"><option value="all" '+(fm==="all"?"selected":"")+'">전체 기간</option>'+mOpts+'</select><select class="sel" onchange="setFC(this.value)"><option value="all" '+(fc==="all"?"selected":"")+'>전체 카테고리</option><optgroup label="입금">'+dOpts+'</optgroup><optgroup label="출금">'+wOpts+'</optgroup></select><div class="srch"><input placeholder="비고 검색…" value="'+esc(q)+'" oninput="setQ(this.value)">'+(q?'<button class="xbtn" onclick="setQ(\'\')">×</button>':"")+'</div><button class="bg" onclick="expCSV()">📥 CSV</button><div class="cnt">'+fil.length+'건</div></div>'
+    +'<div class="twrap"><table class="dt"><thead><tr><th style="width:110px">날짜</th><th class="r" style="width:110px">입금</th><th class="r" style="width:110px">출금</th><th class="r" style="width:110px">잔액</th><th style="width:110px">카테고리</th><th class="c" style="width:70px">세금계산서</th><th>비고</th><th style="width:60px"></th></tr></thead><tbody>'+rows+"</tbody>"+foot+"</table></div>"
     +'<div class="fhint">💡 세금계산서: 입금 시 <b>발행여부</b>, 출금 시 <b>수신여부</b></div>';
 }
 function renderRow(r){
@@ -426,30 +305,19 @@ function renderRow(r){
   var cl=isD?DC:isW?WC:[];
   var cat=AC.find(function(c){return c.id===r.category;});
   var cOpts='<option value="">미분류</option>'+cl.map(function(c){return'<option value="'+c.id+'" '+(r.category===c.id?"selected":"")+'>'+c.label+"</option>";}).join("");
-  return '<tr>'
-    +'<td><input type="date" class="ci" style="color-scheme:light" value="'+(r.date||"")+'" onchange="updR(\''+r.id+'\',\'date\',this.value)"></td>'
+  return '<tr><td><input type="date" class="ci" style="color-scheme:light" value="'+(r.date||"")+'" onchange="updR(\''+r.id+'\',\'date\',this.value)"></td>'
     +'<td class="r"><input type="text" inputmode="numeric" class="ci nr dc" value="'+(r.deposit!=null?fmt(r.deposit):"")+'" placeholder="-" onfocus="nf(this)" onblur="nb(this,\''+r.id+'\',\'deposit\')" oninput="ni(this)"></td>'
     +'<td class="r"><input type="text" inputmode="numeric" class="ci nr wc" value="'+(r.withdraw!=null?fmt(r.withdraw):"")+'" placeholder="-" onfocus="nf(this)" onblur="nb(this,\''+r.id+'\',\'withdraw\')" oninput="ni(this)"></td>'
     +'<td class="r bc" style="color:'+(r.balance>=0?"#1A56DB":"#C53030")+'">'+fmt(r.balance)+"</td>"
     +'<td><select class="csel" '+(cat?'style="color:'+cat.color+';font-weight:600"':"")+' '+((!isD&&!isW)?"disabled":"")+' onchange="updR(\''+r.id+'\',\'category\',this.value)">'+cOpts+"</select></td>"
     +'<td class="txcell"><label class="txck"><input type="checkbox" '+(r.taxInvoice?"checked":"")+' '+((!isD&&!isW)?"disabled":"")+' onchange="updR(\''+r.id+'\',\'taxInvoice\',this.checked)"><span class="txbox">'+(r.taxInvoice?"✓":"")+'</span><span class="txhint">'+(isD?"발행":isW?"수신":"—")+"</span></label></td>"
     +'<td><input type="text" class="ci" value="'+esc(r.memo||"")+'" placeholder="메모…" onchange="updR(\''+r.id+'\',\'memo\',this.value)"></td>'
-    +'<td class="ac"><button class="ib" onclick="dupR(\''+r.id+'\')">⎘</button><button class="ib del" onclick="delR(\''+r.id+'\')">×</button></td>'
-    +"</tr>";
+    +'<td class="ac"><button class="ib" onclick="dupR(\''+r.id+'\')">⎘</button><button class="ib del" onclick="delR(\''+r.id+'\')">×</button></td></tr>';
 }
 window.nf=function(el){el.value=el.value.replace(/,/g,"");el.select();};
 window.ni=function(el){el.value=el.value.replace(/[^\d]/g,"");};
 window.nb=function(el,id,f){var raw=el.value.replace(/[^\d]/g,"");var n=raw===""?null:parseInt(raw,10);el.value=n!=null?fmt(n):"";updR(id,f,n);};
-window.updR=function(id,f,v){
-  S.rows=S.rows.map(function(r){
-    if(r.id!==id)return r;
-    var val=v;
-    if(f==="deposit"||f==="withdraw")val=(v===""||v==null)?null:Number(v);
-    else if(f==="category")val=(v==="")?null:v;
-    return Object.assign({},r,{[f]:val});
-  });
-  saveRows();
-};
+window.updR=function(id,f,v){S.rows=S.rows.map(function(r){if(r.id!==id)return r;var val=v;if(f==="deposit"||f==="withdraw")val=(v===""||v==null)?null:Number(v);else if(f==="category")val=(v==="")?null:v;return Object.assign({},r,{[f]:val});});saveRows();};
 window.addRow=function(){S.rows=[].concat(S.rows,[{id:uid(),date:today(),deposit:null,withdraw:null,category:null,taxInvoice:false,memo:""}]);saveRows();render();};
 window.delR=function(id){if(!confirm("이 행을 삭제하시겠습니까?"))return;S.rows=S.rows.filter(function(r){return r.id!==id;});saveRows();};
 window.dupR=function(id){var t=S.rows.find(function(r){return r.id===id;});if(!t)return;S.rows=[].concat(S.rows,[Object.assign({},t,{id:uid()})]);saveRows();render();};
@@ -458,13 +326,14 @@ window.setFC=function(v){S.ledger.fc=v;render();};
 window.setQ=function(v){S.ledger.search=v;render();};
 window.expCSV=function(){
   var sorted=[].concat(S.rows).sort(function(a,b){return(a.date||"").localeCompare(b.date||"");});
-  var r=0;var wb=sorted.map(function(row){r+=(row.deposit||0)-(row.withdraw||0);return Object.assign({},row,{balance:r});});
+  var run=0;var wb=sorted.map(function(r){run+=(r.deposit||0)-(r.withdraw||0);return Object.assign({},r,{balance:run});});
   var hdr="날짜,입금,출금,잔액,카테고리,세금계산서,비고\n";
   var body=wb.map(function(r){var cat=AC.find(function(c){return c.id===r.category;});return r.date+","+(r.deposit||0)+","+(r.withdraw||0)+","+r.balance+","+(cat?cat.label:"")+","+(r.taxInvoice?"처리완":"미처리")+',"'+(r.memo||"").replace(/"/g,'""')+'"';}).join("\n");
   dl("\uFEFF"+hdr+body,"cashbook_"+today()+".csv","text/csv;charset=utf-8;");
 };
 
-// ── 월별 리포트 ───────────────────────────────
+/* ── 수수료 계산기 ──────────────────────── */
+function renderCalc(){
   var c=S.calc;
   var biz=BT.find(function(b){return b.id===c.bizType;});
   var vanFee=(c.rateIdx!==null&&c.rangeIdx!==null)?KT[c.rangeIdx][c.rateIdx]:null;
@@ -477,7 +346,7 @@ window.expCSV=function(){
   var result="";
   if(vanFee===null){
     result='<div style="max-width:600px;margin:0 auto;text-align:center;padding:36px 20px;color:var(--dim);font-size:13px">② 수수료율과 ③ 객단가 구간을 선택하면 자동 계산됩니다</div>';
-  } else {
+  }else{
     result='<div class="cresult">'
       +'<div class="rcard"><div class="rl">건당 VAN FEE (VAT 포함)</div><div class="rv">'+fmt(vanVat)+'원</div><div class="rs">VAT 별도 '+fmt(Math.round(vanFee*10)/10)+'원 × 1.1 = '+fmt(vanVat)+'원</div></div>'
       +'<div class="rgrid">'
@@ -487,26 +356,25 @@ window.expCSV=function(){
       +'<div class="ri"><div class="rl">선택 객단가 구간</div><div class="rv" style="font-size:14px">'+KR[c.rangeIdx]+'원</div></div>'
       +'</div>'
       +(cnt>0?'<div class="rgrid"><div class="ri"><div class="rl">연간 예상</div><div class="rv" style="color:var(--green)">'+fmt(monthly*12)+'원</div></div><div class="ri"><div class="rl">일평균 (30일)</div><div class="rv">'+fmt(Math.round(monthly/30))+'원</div></div></div>':"")
-      +'<div class="rnote">📌 <b>라인 VAN 수수료 테이블 기준</b> (KSNET, VAT 별도)<br>• 신용/체크 구분 없이 발생월(D)+1개월 말일 일시 지급<br>• 1,000원 미만 승인 건 수수료 미지급<br>• 전표용지 지급, 현금영수증: 발생 건당 5원 별도</div>'
-      +"</div>";
+      +'</div>';
+    result+='<div class="rnote">📌 <b>라인 VAN 수수료 테이블 기준</b> (KSNET, VAT 별도)<br>• 신용/체크 구분 없이 발생월(D)+1개월 말일 일시 지급<br>• 1,000원 미만 승인 건 수수료 미지급<br>• 전표용지 지급, 현금영수증: 건당 5원 별도</div>';
   }
-  // 테이블
   var tHead='<tr><th class="dk" rowspan="2">객단가 구간</th><th colspan="'+KRT.length+'">가맹점 카드사 수수료율 (신용/체크 월 평균)</th></tr><tr>'+KRT.map(function(r,i){return'<th '+(i===c.rateIdx?'style="background:#FCD34D;color:#1A1A1A"':"")+'>'+r+"</th>";}).join("")+"</tr>";
-  var tBody=KT.map(function(row,ri){return'<tr class="'+(ri===c.rangeIdx?"hl":"")+'">'+'<td>'+KR[ri]+'원</td>'+row.map(function(v,ci){return'<td '+(ri===c.rangeIdx&&ci===c.rateIdx?'style="background:#FCD34D;color:#1A1A1A;font-weight:800"':"")+'>'+v+"</td>";}).join("")+"</tr>";}).join("");
+  var tBody=KT.map(function(row,ri){return'<tr class="'+(ri===c.rangeIdx?"hl":"")+'"><td>'+KR[ri]+'원</td>'+row.map(function(v,ci){return'<td '+(ri===c.rangeIdx&&ci===c.rateIdx?'style="background:#FCD34D;color:#1A1A1A;font-weight:800"':"")+'>'+v+"</td>";}).join("")+"</tr>";}).join("");
   return '<div class="cform"><h3>🧮 KSNET 라인 VAN 수수료 계산기</h3>'
-    +'<div class="cf"><label>① 업종 선택</label><div class="chips">'+chipHtml+"</div>"+(biz?'<div style="margin-top:7px;font-size:12px;color:var(--dim)">💡 '+biz.label+' 평균 MDR <b>'+biz.avg+'%</b> 내외</div>':"")+"</div>"
+    +'<div class="cf"><label>① 업종 선택</label><div class="chips">'+chipHtml+"</div>"+(biz?'<div style="margin-top:7px;font-size:12px;color:var(--dim)">💡 '+biz.label+' 평균 MDR <b>'+biz.avg+'%</b> 내외 (2025년 기준)</div>':"")+"</div>"
     +'<div class="cf"><label>② 수수료율 (신용/체크 월 평균 MDR)</label><select class="csel2" onchange="setCR(this.value)"><option value="">-- 수수료율 선택 --</option>'+rOpts+"</select></div>"
     +'<div class="cf"><label>③ 객단가 구간 (월 평균 객단가)</label><select class="csel2" onchange="setCRn(this.value)"><option value="">-- 객단가 구간 선택 --</option>'+rnOpts+"</select></div>"
     +'<div class="cf"><label>④ 월 예상 승인 건수</label><input type="number" class="cinput" placeholder="예: 500" value="'+esc(c.count)+'" oninput="setCnt(this.value)" inputmode="numeric"></div>'
-    +'</div>'+result
-    +'<div class="rtwrap"><h3>📊 KSNET 라인 VAN 수수료 전체 테이블 (단위: 원, VAT 별도)</h3><div style="overflow-x:auto"><table class="rtable"><thead>'+tHead+'</thead><tbody>'+tBody+'</tbody></table></div></div>';
+    +"</div>"+result
+    +'<div class="rtwrap"><h3>📊 KSNET 라인 VAN 수수료 전체 테이블 (단위: 원, VAT 별도)</h3><div style="overflow-x:auto"><table class="rtable"><thead>'+tHead+"</thead><tbody>"+tBody+"</tbody></table></div></div>";
 }
 window.setCB=function(id){S.calc.bizType=id;render();};
 window.setCR=function(v){S.calc.rateIdx=v===""?null:parseInt(v);render();};
 window.setCRn=function(v){S.calc.rangeIdx=v===""?null:parseInt(v);render();};
 window.setCnt=function(v){S.calc.count=v;render();};
 
-// ── 할일 ──────────────────────────────────────
+/* ── 할일 ───────────────────────────────── */
 function renderTodo(){
   var fil=S.todo.filter,showAdd=S.todo.showAdd,form=S.todo.form;
   var sorted=[].concat(S.todos).sort(function(a,b){
@@ -520,7 +388,7 @@ function renderTodo(){
   var dc=S.todos.filter(function(t){return t.done;}).length;
   var oc=S.todos.filter(function(t){return!t.done&&t.dueDate&&t.dueDate<today();}).length;
   var addCard=showAdd?'<div class="acard"><input class="ati" id="tti" placeholder="할일 제목" value="'+esc(form.title)+'" oninput="S.todo.form.title=this.value" onkeydown="if(event.key===\'Enter\')addTodo()"><div class="ameta"><div class="ppicker">'+Object.entries(TP).map(function(e){var k=e[0],p=e[1];return'<button class="pbtn" style="'+(form.priority===k?"background:"+p.bg+";color:"+p.color+";border-color:"+p.color:"")+'" onclick="setPrio(\''+k+'\')">'+p.label+"</button>";}).join("")+'</div><input type="date" id="tdi" class="adi" value="'+esc(form.dueDate)+'" onchange="S.todo.form.dueDate=this.value"><input type="text" id="tmi" class="ami" placeholder="메모(선택)" value="'+esc(form.memo)+'" oninput="S.todo.form.memo=this.value"></div><div class="aact"><button class="bg" onclick="togAdd()">취소</button><button class="bp" onclick="addTodo()">추가</button></div></div>':"";
-  var tdHtml=filtered.length===0?'<div class="epage"><div class="eicon">✓</div><h3>'+(fil==="active"?"할일이 없어요":fil==="done"?"완료한 항목 없음":"할일 없음")+'</h3><p>+ 새 할일 버튼으로 추가하세요.</p></div>':'<div class="tdlist">'+filtered.map(function(t){var p=TP[t.priority],ov=!t.done&&t.dueDate&&t.dueDate<today();return'<div class="td '+(t.done?"dn":"")+" "+(ov?"ov":"")+'"><button class="tck" style="'+(t.done?"background:#0A7D3F;border-color:#0A7D3F":"")+'" onclick="togDone(\''+t.id+'\')">'+(t.done?"✓":"")+'</button><div class="tbody"><div class="thead2"><span class="tprio" style="background:'+p.bg+";color:"+p.color+'">'+p.label+'</span><span class="ttitle">'+esc(t.title)+'</span>'+(t.dueDate?'<span class="tdue '+(ov?"ov":"")+'">📅 '+t.dueDate+(ov?" (지연)":"")+"</span>":"")+'</div>'+(t.memo?'<div class="tmemo">'+esc(t.memo)+"</div>":"")+"</div>"+'<button class="ib del" onclick="delTodo(\''+t.id+'\')">×</button></div>';}).join("")+"</div>";
+  var tdHtml=filtered.length===0?'<div class="epage"><div class="eicon">✓</div><h3>'+(fil==="active"?"할일이 없어요":fil==="done"?"완료한 항목 없음":"할일 없음")+'</h3><p>+ 새 할일 버튼으로 추가하세요.</p></div>':'<div class="tdlist">'+filtered.map(function(t){var p=TP[t.priority],ov=!t.done&&t.dueDate&&t.dueDate<today();return'<div class="td '+(t.done?"dn":"")+" "+(ov?"ov":"")+'"><button class="tck" style="'+(t.done?"background:#0A7D3F;border-color:#0A7D3F":"")+'" onclick="togDone(\''+t.id+'\')">'+(t.done?"✓":"")+'</button><div class="tbody2"><div class="thead2"><span class="tprio" style="background:'+p.bg+";color:"+p.color+'">'+p.label+'</span><span class="ttitle">'+esc(t.title)+'</span>'+(t.dueDate?'<span class="tdue '+(ov?"ov":"")+'">📅 '+t.dueDate+(ov?" (지연)":"")+"</span>":"")+'</div>'+(t.memo?'<div class="tmemo">'+esc(t.memo)+"</div>":"")+"</div>"+'<button class="ib del" onclick="delTodo(\''+t.id+'\')">×</button></div>';}).join("")+"</div>";
   return '<div class="summary s3"><div class="stat"><span class="slabel">진행중</span><span class="sval" style="color:#1A56DB;font-size:18px">'+ac+'건</span></div><div class="stat" style="'+(oc>0?"border-color:#EF4444;background:#FEF2F2":"")+'"><span class="slabel">지난 마감</span><span class="sval" style="color:'+(oc>0?"#C53030":"#64748B")+';font-size:18px">'+oc+'건</span></div><div class="stat"><span class="slabel">완료</span><span class="sval" style="color:#0A7D3F;font-size:18px">'+dc+'건</span></div></div>'
     +'<div class="toolbar"><button class="bp" onclick="togAdd()">＋ 새 할일</button><div class="fchips"><button class="fchip '+(fil==="active"?"on":"")+'" onclick="setTF(\'active\')">진행중 <span class="n">'+ac+'</span></button><button class="fchip '+(fil==="done"?"on":"")+'" onclick="setTF(\'done\')">완료 <span class="n">'+dc+'</span></button><button class="fchip '+(fil==="all"?"on":"")+'" onclick="setTF(\'all\')">전체 <span class="n">'+S.todos.length+'</span></button></div></div>'
     +addCard+tdHtml;
@@ -539,13 +407,13 @@ window.togDone=function(id){S.todos=S.todos.map(function(t){return t.id===id?Obj
 window.delTodo=function(id){if(!confirm("삭제하시겠습니까?"))return;S.todos=S.todos.filter(function(t){return t.id!==id;});saveTodos();};
 window.setTF=function(f){S.todo.filter=f;render();};
 
-// ── 백업 ──────────────────────────────────────
+/* ── 백업 ───────────────────────────────── */
 window.openBackup=function(){S.modal="backup";render();};
 window.closeModal=function(){S.modal=null;render();};
 function renderBackup(){
   return'<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()"><div class="mhead"><h3>💾 백업 · 복원</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody"><div class="bsec"><h4>📥 백업 다운로드</h4><p>모든 데이터를 JSON으로 저장합니다.</p><button class="bp" onclick="expBackup()">백업 파일 다운로드</button></div><div class="bsec"><h4>📤 백업 복원</h4><p>JSON 파일로 복원합니다. <b style="color:#C53030">⚠ 현재 데이터가 덮어씌워집니다.</b></p><label class="filabel">파일 선택<input type="file" class="fiinput" accept=".json" onchange="impBackup(this)"></label></div><div class="bsec"><h4>📄 CSV 내보내기</h4><p>거래내역만 CSV로 내보냅니다.</p><button class="bg" onclick="expCSV()">CSV 다운로드</button></div></div><div class="mact"><button class="bg" onclick="closeModal()">닫기</button></div></div></div>';
 }
-window.expBackup=function(){dl(JSON.stringify({version:2,exportedAt:new Date().toISOString(),rows:S.rows,todos:S.todos,van:S.van},null,2),"사업자장부_백업_"+today()+".json","application/json");alert("백업 완료!");};
+window.expBackup=function(){dl(JSON.stringify({version:3,exportedAt:new Date().toISOString(),rows:S.rows,todos:S.todos},null,2),"사업자장부_백업_"+today()+".json","application/json");alert("백업 완료!");};
 window.impBackup=function(input){
   var f=input.files[0];if(!f)return;
   if(!confirm("복원하시겠습니까? 현재 데이터가 덮어씌워집니다.")){input.value="";return;}
@@ -555,8 +423,7 @@ window.impBackup=function(input){
       var data=JSON.parse(e.target.result);
       if(!Array.isArray(data.rows))throw new Error("잘못된 백업 파일");
       S.rows=data.rows;S.todos=Array.isArray(data.todos)?data.todos:[];
-      if(data.van&&data.van.cards)S.van=data.van;
-      await Promise.all([set(ref(db,"cashbook/rows"),S.rows),set(ref(db,"cashbook/todos"),S.todos),set(ref(db,"cashbook/van"),S.van)]);
+      await Promise.all([set(ref(db,"cashbook/rows"),S.rows),set(ref(db,"cashbook/todos"),S.todos)]);
       alert("복원 완료! 거래 "+S.rows.length+"건, 할일 "+S.todos.length+"건");
       closeModal();
     }catch(err){alert("복원 실패: "+err.message);}
@@ -566,7 +433,6 @@ window.impBackup=function(input){
 };
 function dl(content,name,type){var b=new Blob([content],{type:type});var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 
-// ── 시작 ──────────────────────────────────────
 init();
 </script>
 </body>
