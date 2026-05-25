@@ -80,40 +80,6 @@ table.dt tfoot td{background:#F5F5EF;border-top:2px solid var(--line);padding:9p
 .ec{text-align:center;padding:50px 20px!important;color:var(--dim);font-size:13px}
 .fhint{max-width:1280px;margin:12px auto 0;font-size:12px;color:var(--dim);text-align:center;line-height:1.6}
 /* 리포트 */
-.rhead{max-width:1280px;margin:0 auto 12px;display:flex;justify-content:space-between;align-items:center}
-.rhead h2{margin:0;font-size:18px;font-weight:700}
-.panel{max-width:1280px;margin:0 auto 12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
-.ptitle{font-size:14px;font-weight:700;margin:0 0 12px}
-.g2{max-width:1280px;margin:0 auto 12px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.g2>.panel{margin:0;max-width:none}
-.me{text-align:center;padding:30px 20px;color:var(--dim);font-size:13px}
-.catlist{margin-top:10px}
-.catitem{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:5px 0;font-size:13px;border-bottom:1px solid var(--lsoft)}
-.catitem:last-child{border-bottom:none}
-.cdot{width:10px;height:10px;border-radius:50%}
-.cval{font-variant-numeric:tabular-nums;font-weight:600;color:var(--soft)}
-.bchart{width:100%;height:240px;display:flex;align-items:flex-end;justify-content:space-around;gap:4px;padding:12px 8px 24px;border-bottom:1px solid var(--line)}
-.bgrp{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;position:relative}
-.bbars{display:flex;gap:2px;align-items:flex-end;height:180px}
-.bar{width:12px;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s}
-.blabel{font-size:10px;color:var(--soft)}
-.legend{display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:12px}
-.li{display:flex;align-items:center;gap:5px}
-.ldot{width:10px;height:10px;border-radius:3px}
-.btt{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:3px}
-.bgrp:hover .btt{opacity:1}
-.piewrap{display:flex;align-items:center;justify-content:center;height:160px}
-.pie{width:130px;height:130px}
-/* VAN FEE */
-.vsi{display:grid;grid-template-columns:130px 1fr;gap:10px;align-items:center;margin-bottom:10px}
-.vsi label{font-size:13px;color:var(--soft);font-weight:500}
-.vsi input{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;font-variant-numeric:tabular-nums;text-align:right}
-.vsi input:focus{outline:none;border-color:var(--accent)}
-.vfi{width:70px;border:none;background:transparent;padding:7px 6px;font-size:13px;font-family:inherit;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
-.vfi:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--hi)}
-.vp{color:#9333EA;font-weight:600}.vpr{color:var(--green);font-weight:700}.vls{color:var(--red);font-weight:700}
-.ct{font-size:11px;padding:2px 7px;border-radius:100px;display:inline-block}
-.ccr{background:#E0E7FF;color:#3730A3}.cdb{background:#DCFCE7;color:#166534}
 /* 수수료 계산기 */
 .cform{max-width:600px;margin:0 auto 18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px}
 .cform h3{font-size:16px;font-weight:700;margin:0 0 18px}
@@ -204,7 +170,6 @@ input.fiinput{display:none}
   .root{padding:50px 12px 80px}
   .summary{grid-template-columns:1fr 1fr}
   .s3{grid-template-columns:1fr 1fr}
-  .g2{grid-template-columns:1fr}
   table.dt{font-size:12px;min-width:650px}
   .twrap{overflow-x:auto}
   .srch{max-width:100%}
@@ -331,28 +296,13 @@ const IV=[
   {id:uid(),date:"2026-05-21",deposit:null,withdraw:27740,category:"comm",taxInvoice:false,memo:"통신비"},
   {id:uid(),date:"2026-05-21",deposit:null,withdraw:88000,category:"fee",taxInvoice:false,memo:"범용인증서 / 1년"}
 ];
-const IVC=[
-  {id:uid(),name:"신한카드",type:"credit",merchantRate:1.5,vanFee:113,order:1},
-  {id:uid(),name:"삼성카드",type:"credit",merchantRate:1.5,vanFee:113,order:2},
-  {id:uid(),name:"KB국민카드",type:"credit",merchantRate:1.5,vanFee:113,order:3},
-  {id:uid(),name:"현대카드",type:"credit",merchantRate:1.5,vanFee:113,order:4},
-  {id:uid(),name:"롯데카드",type:"credit",merchantRate:1.5,vanFee:113,order:5},
-  {id:uid(),name:"하나카드",type:"credit",merchantRate:1.5,vanFee:113,order:6},
-  {id:uid(),name:"BC카드",type:"credit",merchantRate:1.5,vanFee:113,order:7},
-  {id:uid(),name:"NH농협카드",type:"credit",merchantRate:1.5,vanFee:113,order:8},
-  {id:uid(),name:"신한 체크카드",type:"debit",merchantRate:1.0,vanFee:113,order:9},
-  {id:uid(),name:"KB 체크카드",type:"debit",merchantRate:1.0,vanFee:113,order:10},
-  {id:uid(),name:"NH 체크카드",type:"debit",merchantRate:1.0,vanFee:113,order:11}
-];
 
 // ── 상태 ──────────────────────────────────────
 const S={
   tab:"ledger",
   rows:[],todos:[],
-  van:{cards:IVC,simAmount:50000},
   calc:{bizType:null,rateIdx:null,rangeIdx:null,count:""},
   ledger:{fm:"all",fc:"all",search:""},
-  report:{sel:""},
   todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},
   modal:null
 };
@@ -371,7 +321,6 @@ function fbSave(path,data,delay){
 }
 function saveRows(){fbSave("cashbook/rows",S.rows);}
 function saveTodos(){fbSave("cashbook/todos",S.todos);}
-function saveVan(){fbSave("cashbook/van",S.van);}
 
 function setSbar(st){
   var b=document.getElementById("sbar"),t=document.getElementById("stxt");
@@ -389,7 +338,6 @@ async function init(){
     if(!snap.exists()){
       await set(ref(db,"cashbook/rows"),IV);
       await set(ref(db,"cashbook/todos"),[]);
-      await set(ref(db,"cashbook/van"),{cards:IVC,simAmount:50000});
     }
     onValue(ref(db,"cashbook/rows"),function(sn){
       S.rows=sn.val()?Object.values(sn.val()):[];
@@ -399,13 +347,6 @@ async function init(){
       S.todos=sn.val()?Object.values(sn.val()):[];
       render();
     });
-    onValue(ref(db,"cashbook/van"),function(sn){
-      if(sn.val()){
-        S.van=sn.val();
-        if(!S.van.cards)S.van.cards=IVC;
-        else if(!Array.isArray(S.van.cards))S.van.cards=Object.values(S.van.cards);
-      }
-      render();
     });
     setSbar("ok");
   }catch(e){
@@ -423,8 +364,6 @@ function render(){
   var ac=S.todos.filter(function(t){return!t.done;}).length;
   var tabs=[
     {id:"ledger",icon:"📒",label:"입출금장부"},
-    {id:"report",icon:"📊",label:"월별리포트"},
-    {id:"van",icon:"💳",label:"VAN FEE"},
     {id:"calc",icon:"🧮",label:"수수료 계산"},
     {id:"todo",icon:"✓",label:"할일관리",badge:ac}
   ];
@@ -436,8 +375,6 @@ function render(){
   }).join("");
   var body="";
   if(S.tab==="ledger")body=renderLedger();
-  else if(S.tab==="report")body=renderReport();
-  else if(S.tab==="van")body=renderVan();
   else if(S.tab==="calc")body=renderCalc();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
@@ -528,114 +465,6 @@ window.expCSV=function(){
 };
 
 // ── 월별 리포트 ───────────────────────────────
-function renderReport(){
-  var map={};
-  S.rows.forEach(function(r){var m=mk(r.date);if(!m)return;if(!map[m])map[m]={month:m,d:0,w:0};map[m].d+=(r.deposit||0);map[m].w+=(r.withdraw||0);});
-  var monthly=Object.values(map).sort(function(a,b){return a.month.localeCompare(b.month);}).map(function(m){return Object.assign({},m,{profit:m.d-m.w,label:m.month.replace("-",".")});});
-  if(!monthly.length)return'<div class="epage"><div class="eicon">📊</div><h3>아직 데이터 없음</h3><p>거래를 입력하면 자동으로 만들어집니다.</p></div>';
-  if(!S.report.sel||!monthly.find(function(m){return m.month===S.report.sel;}))S.report.sel=monthly[monthly.length-1].month;
-  var sel=monthly.find(function(m){return m.month===S.report.sel;});
-  var mRows=S.rows.filter(function(r){return mk(r.date)===S.report.sel;});
-  var dC={},wC={};
-  mRows.forEach(function(r){
-    if(r.deposit&&r.category&&DC.find(function(x){return x.id===r.category;}))dC[r.category]=(dC[r.category]||0)+r.deposit;
-    if(r.withdraw&&r.category&&WC.find(function(x){return x.id===r.category;}))wC[r.category]=(wC[r.category]||0)+r.withdraw;
-  });
-  var dList=Object.entries(dC).map(function(e){var c=AC.find(function(x){return x.id===e[0];});return{name:c?c.label:e[0],value:e[1],color:c?c.color:"#888"};}).sort(function(a,b){return b.value-a.value;});
-  var wList=Object.entries(wC).map(function(e){var c=AC.find(function(x){return x.id===e[0];});return{name:c?c.label:e[0],value:e[1],color:c?c.color:"#888"};}).sort(function(a,b){return b.value-a.value;});
-  var maxV=Math.max.apply(null,monthly.map(function(m){return Math.max(m.d,m.w,Math.abs(m.profit));}))||1;
-  var mopts=monthly.map(function(m){return'<option value="'+m.month+'" '+(S.report.sel===m.month?"selected":"")+'>'+m.label+'월</option>';}).join("");
-  var bars=monthly.map(function(m){
-    var dh=(m.d/maxV)*180,wh=(m.w/maxV)*180,ph=(Math.abs(m.profit)/maxV)*180;
-    return '<div class="bgrp"><div class="btt">'+m.label+'월<br>입금 '+fmt(m.d)+'원<br>출금 '+fmt(m.w)+'원<br>손익 '+(m.profit>=0?"+":"")+fmt(m.profit)+'원</div>'
-      +'<div class="bbars"><div class="bar" style="height:'+dh+'px;background:#0A7D3F"></div><div class="bar" style="height:'+wh+'px;background:#C53030"></div><div class="bar" style="height:'+ph+'px;background:'+(m.profit>=0?"#1A56DB":"#C53030")+';opacity:.7"></div></div>'
-      +'<div class="blabel">'+m.label+"</div></div>";
-  }).join("");
-  var trows=monthly.map(function(m){var rt=m.d>0?(m.profit/m.d*100):null;return'<tr><td><b>'+m.label+'월</b></td><td class="r" style="color:#0A7D3F">+'+fmt(m.d)+'</td><td class="r" style="color:#C53030">-'+fmt(m.w)+'</td><td class="r" style="color:'+(m.profit>=0?"#1A56DB":"#C53030")+';font-weight:700">'+(m.profit>=0?"+":"")+fmt(m.profit)+'</td><td class="r" style="color:'+(rt>=0?"#1A56DB":"#C53030")+'">'+(rt==null?"—":rt.toFixed(1)+"%")+"</td></tr>";}).join("");
-  return '<div class="rhead"><h2>월별 손익 리포트</h2><select class="sel" onchange="setRM(this.value)">'+mopts+"</select></div>"
-    +(sel?'<div class="summary s3"><div class="stat"><span class="slabel">입금</span><span class="sval" style="color:#0A7D3F">+'+fmt(sel.d)+'원</span></div><div class="stat"><span class="slabel">출금</span><span class="sval" style="color:#C53030">-'+fmt(sel.w)+'원</span></div><div class="stat smain"><span class="slabel">월 손익</span><span class="sval" style="color:'+(sel.profit>=0?"#1A56DB":"#C53030")+'">'+(sel.profit>=0?"+":"")+fmt(sel.profit)+'원</span></div></div>':"")
-    +'<div class="panel"><h3 class="ptitle">월별 추이</h3><div class="bchart">'+bars+'</div><div class="legend"><div class="li"><span class="ldot" style="background:#0A7D3F"></span>입금</div><div class="li"><span class="ldot" style="background:#C53030"></span>출금</div><div class="li"><span class="ldot" style="background:#1A56DB"></span>손익</div></div></div>'
-    +'<div class="g2">'
-    +'<div class="panel"><h3 class="ptitle">'+S.report.sel.replace("-",".")+'월 입금 카테고리</h3>'+(dList.length===0?'<div class="me">입금 카테고리 없음</div>':'<div class="piewrap">'+mkPie(dList)+'</div><div class="catlist">'+dList.map(function(d){return'<div class="catitem"><span class="cdot" style="background:'+d.color+'"></span><span>'+esc(d.name)+'</span><span class="cval">'+fmt(d.value)+'원</span></div>';}).join("")+"</div>")+"</div>"
-    +'<div class="panel"><h3 class="ptitle">'+S.report.sel.replace("-",".")+'월 출금 카테고리</h3>'+(wList.length===0?'<div class="me">출금 카테고리 없음</div>':'<div class="piewrap">'+mkPie(wList)+'</div><div class="catlist">'+wList.map(function(d){return'<div class="catitem"><span class="cdot" style="background:'+d.color+'"></span><span>'+esc(d.name)+'</span><span class="cval">'+fmt(d.value)+'원</span></div>';}).join("")+"</div>")+"</div>"
-    +"</div>"
-    +'<div class="panel"><h3 class="ptitle">월별 손익 요약</h3><table class="dt"><thead><tr><th>월</th><th class="r">입금</th><th class="r">출금</th><th class="r">손익</th><th class="r">손익률</th></tr></thead><tbody>'+trows+"</tbody></table></div>";
-}
-function mkPie(data){
-  var total=data.reduce(function(s,d){return s+d.value;},0);if(!total)return"";
-  var cur=-90;var cx=65,cy=65,r=55;
-  var paths=data.map(function(d){
-    var a=(d.value/total)*360;var sa=cur;cur+=a;
-    if(a>=360)return'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+d.color+'"/>';
-    var x1=cx+r*Math.cos(sa*Math.PI/180),y1=cy+r*Math.sin(sa*Math.PI/180);
-    var x2=cx+r*Math.cos(cur*Math.PI/180),y2=cy+r*Math.sin(cur*Math.PI/180);
-    return'<path d="M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+(a>180?1:0)+' 1 '+x2+' '+y2+' Z" fill="'+d.color+'"/>';
-  }).join("");
-  return'<svg class="pie" viewBox="0 0 130 130">'+paths+"</svg>";
-}
-window.setRM=function(v){S.report.sel=v;render();};
-
-// ── VAN FEE ───────────────────────────────────
-function renderVan(){
-  var cards=[].concat(S.van.cards).sort(function(a,b){if(a.type==="credit"&&b.type!=="credit")return -1;if(a.type!=="credit"&&b.type==="credit")return 1;return(a.order||0)-(b.order||0);});
-  var sim=Number(S.van.simAmount)||0;
-  var cr=cards.filter(function(c){return c.type==="credit";}),db=cards.filter(function(c){return c.type==="debit";});
-  var avgCR=cr.length?cr.reduce(function(s,c){return s+c.merchantRate;},0)/cr.length:0;
-  var avgDB=db.length?db.reduce(function(s,c){return s+c.merchantRate;},0)/db.length:0;
-  var avgVF=cards.length?cards.reduce(function(s,c){return s+c.vanFee;},0)/cards.length:0;
-  var rows=cards.length===0?'<tr><td colspan="8" class="ec">카드사를 추가해주세요.</td></tr>':cards.map(function(c){return renderVR(c,sim);}).join("");
-  var foot=cards.length>0?renderVF(cards,sim):"";
-  return '<div class="summary">'
-    +'<div class="stat"><span class="slabel">등록 카드사</span><span class="sval" style="color:#1A56DB;font-size:18px">'+cards.length+'개</span></div>'
-    +'<div class="stat"><span class="slabel">신용 평균 수수료율</span><span class="sval" style="color:#9333EA;font-size:18px">'+avgCR.toFixed(2)+'%</span></div>'
-    +'<div class="stat"><span class="slabel">체크 평균 수수료율</span><span class="sval" style="color:#0891B2;font-size:18px">'+avgDB.toFixed(2)+'%</span></div>'
-    +'<div class="stat"><span class="slabel">평균 VAN FEE</span><span class="sval" style="color:#C53030;font-size:18px">'+fmt(Math.round(avgVF))+'원</span></div>'
-    +'</div>'
-    +'<div class="panel"><h3 class="ptitle">💡 결제금액 시뮬레이션</h3>'
-    +'<div class="vsi"><label>가맹점 결제금액</label><input type="text" inputmode="numeric" value="'+fmt(sim)+'" onfocus="this.value=this.value.replace(/,/g,\'\');this.select()" onblur="simB(this)" oninput="this.value=this.value.replace(/[^\\d]/g,\'\')"></div>'
-    +'<div style="font-size:12px;color:var(--dim)">※ 이 금액으로 결제 시 카드사별 수수료·VAN FEE·대리점 이익을 자동 계산합니다.</div></div>'
-    +'<div class="toolbar"><button class="bp" onclick="addVC(\'credit\')">＋ 신용카드</button><button class="bp" onclick="addVC(\'debit\')" style="background:#0891B2">＋ 체크카드</button><button class="bg" onclick="expVan()" style="margin-left:auto">📥 CSV</button><button class="bg" onclick="rstVan()" style="color:var(--red)">⟲ 초기화</button></div>'
-    +'<div class="twrap"><table class="dt"><thead><tr><th style="width:50px">구분</th><th style="width:130px">카드사</th><th class="r" style="width:100px">수수료율(%)</th><th class="r" style="width:110px">수수료('+fmt(sim)+'원)</th><th class="r" style="width:100px">VAN FEE</th><th class="r">대리점 이익</th><th class="r" style="width:65px">이익률</th><th style="width:46px"></th></tr></thead>'
-    +'<tbody>'+rows+'</tbody>'+foot+'</table></div>'
-    +'<div class="fhint">💡 <b>대리점 이익</b> = (결제금액 × 수수료율) − VAN FEE</div>';
-}
-function renderVR(c,sim){
-  var fee=sim*c.merchantRate/100,profit=fee-c.vanFee,rate=sim>0?(profit/sim*100):0,ok=profit>=0;
-  return '<tr>'
-    +'<td><span class="ct '+(c.type==="credit"?"ccr":"cdb")+'">'+(c.type==="credit"?"신용":"체크")+"</span></td>"
-    +'<td><input type="text" class="ci" style="font-weight:600" value="'+esc(c.name)+'" onchange="updVC(\''+c.id+'\',\'name\',this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" min="0" max="100" class="vfi vp" value="'+c.merchantRate+'" onchange="updVC(\''+c.id+'\',\'merchantRate\',this.value)"> %</td>'
-    +'<td class="r" style="color:#9333EA;font-weight:600">'+fmt(Math.round(fee))+'원</td>'
-    +'<td class="r"><input type="number" step="1" min="0" class="vfi" style="color:#C53030;font-weight:600" value="'+c.vanFee+'" onchange="updVC(\''+c.id+'\',\'vanFee\',this.value)"> 원</td>'
-    +'<td class="r '+(ok?"vpr":"vls")+'">'+(ok?"+":"")+fmt(Math.round(profit))+'원</td>'
-    +'<td class="r" style="color:'+(ok?"#0A7D3F":"#C53030")+'">'+rate.toFixed(2)+'%</td>'
-    +'<td class="ac"><button class="ib del" onclick="delVC(\''+c.id+'\')">×</button></td></tr>';
-}
-function renderVF(cards,sim){
-  function calc(arr){
-    if(!arr.length)return null;
-    var ar=arr.reduce(function(s,c){return s+c.merchantRate;},0)/arr.length;
-    var af=sim*ar/100,av=arr.reduce(function(s,c){return s+c.vanFee;},0)/arr.length,ap=af-av,apr=sim>0?(ap/sim*100):0;
-    return{ar:ar,af:af,av:av,ap:ap,apr:apr};
-  }
-  function row(label,s){if(!s)return"";return'<tr><td colspan="2"><b>'+label+'</b></td><td class="r"><b>'+s.ar.toFixed(2)+'%</b></td><td class="r" style="color:#9333EA"><b>'+fmt(Math.round(s.af))+'원</b></td><td class="r" style="color:#C53030"><b>'+fmt(Math.round(s.av))+'원</b></td><td class="r '+(s.ap>=0?"vpr":"vls")+'"><b>'+(s.ap>=0?"+":"")+fmt(Math.round(s.ap))+'원</b></td><td class="r"><b>'+s.apr.toFixed(2)+'%</b></td><td></td></tr>';}
-  var cr=calc(cards.filter(function(c){return c.type==="credit";})),db=calc(cards.filter(function(c){return c.type==="debit";}));
-  return'<tfoot>'+row("신용카드 평균",cr)+row("체크카드 평균",db)+"</tfoot>";
-}
-window.simB=function(el){var n=parseInt(el.value.replace(/[^\d]/g,""),10)||0;S.van.simAmount=n;el.value=fmt(n);saveVan();render();};
-window.updVC=function(id,f,v){S.van.cards=S.van.cards.map(function(c){if(c.id!==id)return c;var val=v;if(f==="merchantRate"||f==="vanFee")val=v===""?0:Number(v);return Object.assign({},c,{[f]:val});});saveVan();render();};
-window.addVC=function(type){var ord=(S.van.cards[S.van.cards.length-1]||{order:0}).order+1;S.van.cards=[].concat(S.van.cards,[{id:uid(),name:type==="credit"?"새 신용카드":"새 체크카드",type:type,merchantRate:type==="credit"?1.5:1.0,vanFee:113,order:ord}]);saveVan();render();};
-window.delVC=function(id){if(!confirm("삭제하시겠습니까?"))return;S.van.cards=S.van.cards.filter(function(c){return c.id!==id;});saveVan();render();};
-window.rstVan=function(){if(!confirm("초기화하시겠습니까?"))return;S.van={cards:JSON.parse(JSON.stringify(IVC)),simAmount:50000};saveVan();render();};
-window.expVan=function(){
-  var sim=S.van.simAmount;
-  var hdr="구분,카드사,수수료율(%),결제수수료,VAN FEE,대리점이익,이익률(%)\n";
-  var body=S.van.cards.map(function(c){var fee=sim*c.merchantRate/100,profit=fee-c.vanFee;return(c.type==="credit"?"신용":"체크")+","+c.name+","+c.merchantRate+","+Math.round(fee)+","+c.vanFee+","+Math.round(profit)+","+(sim>0?(profit/sim*100):0).toFixed(2);}).join("\n");
-  dl("\uFEFF"+hdr+body,"van_fee_"+today()+".csv","text/csv;charset=utf-8;");
-};
-
-// ── 수수료 계산기 ─────────────────────────────
-function renderCalc(){
   var c=S.calc;
   var biz=BT.find(function(b){return b.id===c.bizType;});
   var vanFee=(c.rateIdx!==null&&c.rangeIdx!==null)?KT[c.rangeIdx][c.rateIdx]:null;
