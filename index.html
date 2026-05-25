@@ -212,17 +212,98 @@ input.fiinput{display:none}
   .main{padding:110px 0 70px}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .result-grid{grid-template-columns:1fr}
-  .ntable-wrap{border-left:none;border-right:none}
-  table.nt{font-size:12px;min-width:620px}
   .tabnav-inner{padding:0 8px}
   .tabitem{padding:0 12px;font-size:13px}
   .tabitem{display:none}
   .bnav{display:block}
-  .box-body{padding:12px}
+  .box-body{padding:10px}
   .calc-field{grid-template-columns:1fr;gap:4px}
-  .nsrch input{width:140px}
-  .main .box,.main .ntable-wrap,.main .calc-section,.main .result-area,.main .ksnet-wrap{border-left:none;border-right:none}
+  .nsrch input{width:120px}
+  .main .box,.main .calc-section,.main .result-area,.main .ksnet-wrap{border-left:none;border-right:none}
+
+  /* ── 입출금 테이블 → 모바일 카드형 ── */
+  .ntable-wrap{border:none;overflow:visible;background:transparent}
+  table.nt{display:block}
+  table.nt thead{display:none}
+  table.nt tbody{display:flex;flex-direction:column;gap:8px}
+  table.nt tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#fff;border:1px solid var(--line);padding:0;border-radius:2px}
+  table.nt tbody td{padding:8px 10px;border-bottom:none;font-size:12px;position:relative}
+  table.nt tbody td::before{display:block;font-size:10px;color:var(--dim);font-weight:700;margin-bottom:3px;letter-spacing:.03em}
+  /* 날짜 - 풀 폭 */
+  table.nt tbody td:nth-child(1){grid-column:1/-1;border-bottom:1px solid var(--line);padding:8px 10px}
+  table.nt tbody td:nth-child(1)::before{content:'📅 날짜'}
+  table.nt tbody td:nth-child(1) input{font-size:13px;font-weight:600;padding:0}
+  /* 입금 */
+  table.nt tbody td:nth-child(2)::before{content:'📥 입금'}
+  /* 출금 */
+  table.nt tbody td:nth-child(3)::before{content:'📤 출금'}
+  /* 잔액 - 풀 폭 */
+  table.nt tbody td:nth-child(4){grid-column:1/-1;border-top:1px solid var(--line-soft);background:#F8FCF8}
+  table.nt tbody td:nth-child(4)::before{content:'💰 잔액'}
+  /* 카테고리 */
+  table.nt tbody td:nth-child(5)::before{content:'📂 카테고리'}
+  /* 세금계산서 */
+  table.nt tbody td:nth-child(6){grid-column:1/-1;border-top:1px solid var(--line-soft)}
+  table.nt tbody td:nth-child(6)::before{content:'🧾 세금계산서'}
+  .txcell{text-align:left!important;padding:8px 10px!important}
+  .txck{flex-direction:row;gap:8px;align-items:center;padding:0}
+  /* 비고 - 풀 폭 */
+  table.nt tbody td:nth-child(7){grid-column:1/-1;border-top:1px solid var(--line-soft)}
+  table.nt tbody td:nth-child(7)::before{content:'📝 비고'}
+  /* 액션 - 풀 폭 */
+  table.nt tbody td:nth-child(8){grid-column:1/-1;border-top:1px solid var(--line);text-align:right;padding:6px 10px;background:#FAFAFA}
+  table.nt tfoot{display:none}
+  /* 입력 필드 모바일 */
+  table.nt .ci{padding:2px 0}
+  table.nt .r{text-align:left}
+  table.nt .bc{padding:2px 0}
+
+  /* ── 가격표 모바일 ── */
+  .price-grid{grid-template-columns:1fr}
+  .pcard.wide{grid-column:1}
+  .pcard.wide .pcard-img{height:80px}
+  .pcard.wide .pcard-body{grid-template-columns:1fr}
+  .pcard.wide .pcard-name-area{grid-column:1}
+  .pcard-img{height:100px}
+  .pcard-img img{max-height:84px}
+  .pcard-sell{font-size:15px}
+  .pcard-spec{display:none}
+
+  /* ── 견적서 모바일 ── */
+  .quote-wrap{display:flex;flex-direction:column;gap:10px}
+  .qpanel{position:static}
+  /* 견적서 패널이 위로 */
+  .quote-wrap > .qbox:last-child{order:-1}
+  .qprod-row{padding:10px 14px}
+  .qprod-img{width:40px;height:40px}
+  .qname{font-size:12px}
+  .qspec{display:none}
+  .qty-btn{width:28px;height:28px;font-size:15px}
+  .qty-inp{width:36px;height:28px;font-size:13px}
 }
+
+
+  /* ── 가격표 ── */
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .pcard{background:#fff;border:1px solid var(--line);overflow:hidden;transition:box-shadow .2s}
+  .pcard:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .pcard-img{width:100%;height:130px;background:#F7F8FA;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #F0F0F0;position:relative}
+  .pcard-img img{max-width:70%;max-height:108px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.12))}
+  .pcard-num{position:absolute;top:8px;left:8px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px}
+  .pcard-body{padding:14px 16px}
+  .pcard-name{font-size:13px;font-weight:800;margin-bottom:3px}
+  .pcard-prices{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:3px}
+  .pcard-buy{font-size:11px;color:#AAA}
+  .pcard-sell{font-size:17px;font-weight:900;color:var(--green)}
+  .pcard-vat{font-size:10px;color:#AAA}
+  .pcard-spec{font-size:11px;color:#888;line-height:1.5;margin-bottom:8px}
+  .pcard-badges{display:flex;flex-wrap:wrap;gap:4px}
+  .pbadge-sell{background:#E9FAF0;color:#00AC53;font-size:10px;font-weight:700;padding:2px 7px;border:1px solid #B2EAC9}
+  .pbadge-monthly{background:#EEF4FF;color:#1A56DB;font-size:10px;font-weight:700;padding:2px 7px;border:1px solid #C5D8FF}
+  .pcard.wide{grid-column:1/-1}
+  .pcard.wide .pcard-img{height:100px}
+  .pcard.wide .pcard-body{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
+  .pcard.wide .pcard-name-area{grid-column:1/-1}
 
   /* ── 견적서 레이아웃 ── */
   .quote-wrap{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
@@ -631,7 +712,7 @@ function renderQuote(){
         +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
       +'</div>'
       +'<div class="qitems" id="qi-panel">'+qc.items+'</div>'
-      +(qc.hasItems?'<div class="qtotal">'+qc.total+'</div>':"")
+      +'<div id="q-total-area">'+(qc.hasItems?'<div class="qtotal">'+qc.total+'</div>':"")+"</div>"
       +'<div class="qactions">'
         +'<button class="qbtn-p" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>'
         +'<button class="qbtn-r" onclick="resetQ()">↺ 초기화</button>'
@@ -675,9 +756,21 @@ window.chQty=function(id,d){QTY[id]=Math.max(0,(QTY[id]||0)+d);var el=document.g
 window.inQty=function(id,v){QTY[id]=Math.max(0,parseInt(v)||0);updQRow(id);refreshQPanel();};
 function updQRow(id){var r=document.getElementById("qrow-"+id);if(r)r.className="qprod-row "+(QTY[id]>0?"sel":"");};
 function refreshQPanel(){
-  var c=buildQContent();
+  var qc=buildQContent();
+  // 항목 패널 갱신
   var panel=document.getElementById("qi-panel");
-  if(panel)panel.innerHTML=c.items;
+  if(panel)panel.innerHTML=qc.items;
+  // 합계 패널 갱신
+  var totalEl=document.getElementById("q-total-area");
+  if(totalEl){
+    if(qc.hasItems){
+      totalEl.innerHTML='<div class="qtotal">'+qc.total+'</div>';
+      totalEl.style.display="block";
+    }else{
+      totalEl.innerHTML="";
+      totalEl.style.display="none";
+    }
+  }
 }
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
