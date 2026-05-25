@@ -681,8 +681,7 @@ function renderQuote(){
         +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
         +'<div>'
           +'<div class="qname">'+p.name+'</div>'
-          +'<div class="qspec">'+p.spec.replace(/
-/g,' · ')+'</div>'
+          +'<div class="qspec">'+p.spec.split('\n').join(' · ')+'</div>'
           +'<div class="qprices">'
             +'<span class="qsell">'+fmtN(p.sell)+'원</span>'
             +'<span class="qvat-tag">VAT 별도</span>'
@@ -701,12 +700,10 @@ function renderQuote(){
 
   return '<div class="quote-wrap">'
 
-    /* ── 상단: 견적서 패널 (풀폭) ── */
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">🧾 견적서</span><span style="font-size:11px;color:#888">'+dateStr+'</span></div>'
       +'<div class="qinner">'
 
-        /* 왼쪽: 고객정보 + 모드 + 항목 */
         +'<div class="qinner-left">'
           +'<div class="qmeta">'
             +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" oninput="refreshQ()"></div>'
@@ -720,7 +717,6 @@ function renderQuote(){
           +'<div class="qitems" id="qi-panel">'+qc.items+'</div>'
         +'</div>'
 
-        /* 오른쪽: 합계 + 버튼 */
         +'<div class="qinner-right">'
           +'<div id="q-total-area" style="flex:1">'+(qc.hasItems?'<div class="qtotal">'+qc.total+'</div>':"")+'</div>'
           +'<div class="qactions">'
@@ -731,7 +727,6 @@ function renderQuote(){
       +'</div>'
     +'</div>'
 
-    /* ── 하단: 장비 선택 (풀폭) ── */
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">📦 장비 선택</span><span style="font-size:11px;color:#888">수량 입력 → 위 견적서에 자동 반영</span></div>'
       +prodRows
