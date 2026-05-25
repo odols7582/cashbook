@@ -223,6 +223,61 @@ input.fiinput{display:none}
   .nsrch input{width:140px}
   .main .box,.main .ntable-wrap,.main .calc-section,.main .result-area,.main .ksnet-wrap{border-left:none;border-right:none}
 }
+
+  /* ── 견적서 레이아웃 ── */
+  .quote-wrap{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
+  .qbox{background:#fff;border:1px solid var(--line)}
+  .qbox-head{padding:13px 18px;border-bottom:2px solid var(--green);display:flex;align-items:center;justify-content:space-between}
+  .qbox-title{font-size:14px;font-weight:800}
+  .qprod-row{padding:13px 18px;border-bottom:1px solid #F0F0F0;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:background .15s}
+  .qprod-row:last-child{border-bottom:none}
+  .qprod-row:hover{background:#FAFFF7}
+  .qprod-row.sel{background:#F0FFF6;border-left:3px solid var(--green)}
+  .qprod-left{display:flex;gap:10px;align-items:center}
+  .qprod-img{width:48px;height:48px;object-fit:contain;background:#F7F8FA;border:1px solid #EBEBEB;flex-shrink:0;padding:3px}
+  .qname{font-size:13px;font-weight:700;margin-bottom:2px;color:#1A1A1A}
+  .qspec{font-size:11px;color:#999;margin-bottom:5px;line-height:1.4}
+  .qprices{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .qsell{font-size:14px;font-weight:800;color:var(--green)}
+  .qbuy{font-size:11px;color:#BBB}
+  .qvat-tag{font-size:10px;color:#BBB}
+  .qmon{font-size:11px;color:#1A56DB;background:#EEF4FF;padding:2px 6px;border:1px solid #C5D8FF;font-weight:600}
+  .qty-ctrl{display:flex;align-items:center;border:1px solid #D0D0D0;flex-shrink:0}
+  .qty-btn{width:32px;height:32px;background:#F5F5F5;border:none;font-size:18px;cursor:pointer;color:#505050;line-height:1;font-family:inherit;transition:background .1s}
+  .qty-btn:hover{background:#E0F7EA;color:var(--green)}
+  .qty-inp{width:44px;height:32px;border:none;border-left:1px solid #D0D0D0;border-right:1px solid #D0D0D0;text-align:center;font-size:14px;font-weight:700;font-family:inherit;color:#1A1A1A;background:#fff}
+  .qty-inp:focus{outline:none;background:#F0FFF6}
+  .qpanel{position:sticky;top:106px}
+  .qmeta{padding:14px 18px;border-bottom:1px solid #F0F0F0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .qmeta-field{display:flex;flex-direction:column;gap:3px}
+  .qmeta-label{font-size:10px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .qmeta-input{border:1px solid #D0D0D0;padding:6px 8px;font-size:12px;font-family:inherit;color:#1A1A1A;border-radius:2px}
+  .qmeta-input:focus{outline:none;border-color:var(--green)}
+  .qmode{padding:10px 18px;border-bottom:1px solid #F0F0F0;display:flex}
+  .qmode-btn{flex:1;padding:7px;border:1px solid #D0D0D0;background:#F5F5F5;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#888;transition:all .15s}
+  .qmode-btn:first-child{border-right:none}
+  .qmode-btn.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .qitems{padding:14px 18px;min-height:120px;border-bottom:1px solid #F0F0F0}
+  .qitem-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:start;padding:7px 0;border-bottom:1px solid #F5F5F5;font-size:12px}
+  .qitem-row:last-child{border-bottom:none}
+  .qitem-name{font-weight:600;color:#1A1A1A;line-height:1.4}
+  .qitem-qty{color:#888;white-space:nowrap}
+  .qitem-amt{font-weight:700;color:#1A1A1A;text-align:right;white-space:nowrap}
+  .qempty{text-align:center;color:#CCC;font-size:13px;padding:30px 0}
+  .qtotal{padding:14px 18px;border-bottom:1px solid #F0F0F0}
+  .qtrow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+  .qtrow.main{padding-top:10px;margin-top:6px;border-top:2px solid #1A1A1A}
+  .qtrow.main .qtl{font-size:15px;font-weight:800}
+  .qtrow.main .qtv{font-size:20px;font-weight:900;color:var(--green)}
+  .qtrow .qtl{color:#505050}
+  .qtrow .qtv{font-weight:700;font-variant-numeric:tabular-nums}
+  .qtrow.blue .qtv{color:#1A56DB}
+  .qvat{font-size:11px;color:#AAA;margin-top:8px;text-align:right}
+  .qactions{padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+  .qbtn-p{background:#1A56DB;color:#fff;border:none;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;transition:background .15s}
+  .qbtn-p:hover{background:#1644B0}
+  .qbtn-r{background:#fff;color:#888;border:1px solid #D0D0D0;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;width:100%}
+  .qbtn-r:hover{background:#F5F5F5;color:#1A1A1A}
 </style>
 </head>
 <body>
@@ -533,37 +588,58 @@ function renderPrice(){
 
 /* ── 견적서 ── */
 function renderQuote(){
+  var d=new Date();
+  var dateStr=d.getFullYear()+"년 "+(d.getMonth()+1)+"월 "+d.getDate()+"일";
+  var qc=buildQContent();
   var prodRows=PRODUCTS.map(function(p){
     return '<div class="qprod-row '+(QTY[p.id]>0?"sel":"")+'" id="qrow-'+p.id+'">'
-      +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
-      +'<div class="qprod-info"><div class="qname">'+p.name+'</div><div class="qspec">'+p.spec.replace(/\n/g,"<br>")+'</div>'
-      +'<div class="qprices"><span class="qbuy">매입 '+fmtN(p.buy)+'원</span><span class="qsell">'+fmtN(p.sell)+'원</span><span class="qmon">📅 '+(p.monthly>0?fmtN(p.monthly)+"원":"무상")+'</span></div></div>'
+      +'<div class="qprod-left">'
+        +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
+        +'<div>'
+          +'<div class="qname">'+p.name+'</div>'
+          +'<div class="qspec">'+p.spec.replace(/\n/g,' · ')+'</div>'
+          +'<div class="qprices">'
+            +'<span class="qsell">'+fmtN(p.sell)+'원</span>'
+            +'<span class="qvat-tag">VAT 별도</span>'
+            +'<span class="qbuy">매입 '+fmtN(p.buy)+'원</span>'
+            +'<span class="qmon">📅 '+(p.monthly>0?fmtN(p.monthly)+'원':'무상')+'</span>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
       +'<div class="qty-ctrl">'
-      +'<button class="qty-btn" onclick="chQty('+p.id+',-1)">−</button>'
-      +'<input class="qty-inp" type="number" id="qi-'+p.id+'" value="'+QTY[p.id]+'" min="0" oninput="inQty('+p.id+',this.value)">'
-      +'<button class="qty-btn" onclick="chQty('+p.id+',+1)">+</button>'
-      +'</div></div>';
+        +'<button class="qty-btn" onclick="chQty('+p.id+',-1)">−</button>'
+        +'<input class="qty-inp" type="number" id="qi-'+p.id+'" value="'+QTY[p.id]+'" min="0" oninput="inQty('+p.id+',this.value)">'
+        +'<button class="qty-btn" onclick="chQty('+p.id+',+1)">+</button>'
+      +'</div>'
+    +'</div>';
   }).join("");
 
-  var today=new Date();
-  var dateStr=today.getFullYear()+"년 "+(today.getMonth()+1)+"월 "+today.getDate()+"일";
-  var qContent=buildQContent();
-
   return '<div class="quote-wrap">'
-    +'<div class="qbox"><div class="qbox-head"><span class="qbox-title">📦 장비 선택</span><span style="font-size:11px;color:#888">수량 입력 → 우측 자동 반영</span></div>'+prodRows+'</div>'
-    +'<div class="qbox qpanel">'
-    +'<div class="qbox-head"><span class="qbox-title">🧾 견적서</span><span style="font-size:11px;color:#888">'+dateStr+'</span></div>'
-    +'<div class="qmeta">'
-    +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" oninput="refreshQ()"></div>'
-    +'<div class="qmeta-field"><label class="qmeta-label">담당자</label><input class="qmeta-input" id="qm-name" placeholder="홍길동" oninput="refreshQ()"></div>'
-    +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" placeholder="010-0000-0000" oninput="refreshQ()"></div>'
+    +'<div class="qbox">'
+      +'<div class="qbox-head"><span class="qbox-title">📦 장비 선택</span><span style="font-size:11px;color:#888">수량 입력 → 우측 자동 반영</span></div>'
+      +prodRows
     +'</div>'
-    +'<div class="qmode"><button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button><button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button></div>'
-    +'<div class="qitems" id="qi-panel">'+qContent.items+'</div>'
-    +(qContent.hasItems?'<div class="qtotal">'+qContent.total+'</div>':"")
-    +'<div class="qactions"><button class="qbtn-p" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button><button class="qbtn-r" onclick="resetQ()">↺ 초기화</button></div>'
-    +'</div></div>';
+    +'<div class="qbox qpanel">'
+      +'<div class="qbox-head"><span class="qbox-title">🧾 견적서</span><span style="font-size:11px;color:#888">'+dateStr+'</span></div>'
+      +'<div class="qmeta">'
+        +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" oninput="refreshQ()"></div>'
+        +'<div class="qmeta-field"><label class="qmeta-label">담당자</label><input class="qmeta-input" id="qm-name" placeholder="홍길동" oninput="refreshQ()"></div>'
+        +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" placeholder="010-0000-0000" oninput="refreshQ()"></div>'
+      +'</div>'
+      +'<div class="qmode">'
+        +'<button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button>'
+        +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
+      +'</div>'
+      +'<div class="qitems" id="qi-panel">'+qc.items+'</div>'
+      +(qc.hasItems?'<div class="qtotal">'+qc.total+'</div>':"")
+      +'<div class="qactions">'
+        +'<button class="qbtn-p" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>'
+        +'<button class="qbtn-r" onclick="resetQ()">↺ 초기화</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
 }
+
 
 function buildQContent(){
   var sel=PRODUCTS.filter(function(p){return QTY[p.id]>0;});
