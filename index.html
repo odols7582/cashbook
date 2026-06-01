@@ -400,9 +400,9 @@ input.fiinput{display:none}
   .qinner-left{}
   .qinner-right{border-top:1px solid var(--line)}
   .qmeta{padding:12px 14px;border-bottom:1px solid #F0F0F0;display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .qmeta-field{display:flex;flex-direction:column;gap:3px}
+  .qmeta-field{display:flex;flex-direction:column;gap:3px;min-width:0}
   .qmeta-label{font-size:10px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-  .qmeta-input{border:1px solid #D0D0D0;padding:6px 8px;font-size:12px;font-family:inherit;color:#1A1A1A;border-radius:2px}
+  .qmeta-input{width:100%;box-sizing:border-box;border:1px solid #D0D0D0;padding:6px 8px;font-size:12px;font-family:inherit;color:#1A1A1A;border-radius:2px}
   .qmeta-input:focus{outline:none;border-color:var(--green)}
   .qmode{padding:8px 14px;border-bottom:1px solid #F0F0F0;display:flex}
   .qmode-btn{flex:1;padding:7px;border:1px solid #D0D0D0;background:#F5F5F5;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#888;transition:all .15s}
@@ -1020,10 +1020,11 @@ function buildQContent(){
     +'</div>';
   }).join("");
 
-  // 확정된 할인/조정 항목 (읽기 전용 표시)
+  // 확정된 할인/조정 항목 (VAT 포함 금액으로 표시)
+  var adjustTotalVat=0; // VAT 포함 조정액 합계
   var adjustRows=ADJUST.map(function(a){
-    var amt=Number(a.amount)||0;
-    if(QMODE==="sell")supply+=amt; else monthly+=amt;
+    var amt=Number(a.amount)||0; // VAT 포함 금액
+    adjustTotalVat+=amt;
     var sign=amt>=0?"+":"";
     var color=amt>=0?"#1A73E8":"#C53030";
     return '<div class="qitem-row qadjust-row">'
@@ -1034,42 +1035,51 @@ function buildQContent(){
       +'<div class="qitem-qty"></div>'
       +'<div class="qitem-amt" style="color:'+color+';font-weight:700">'
         +sign+fmtN(amt)+'원'
+        +'<span style="font-size:10px;color:#999;font-weight:400;margin-left:2px">(VAT포함)</span>'
         +'<button class="qadjust-del" onclick="delAdjust(&apos;'+a.id+'&apos;)">×</button>'
       +'</div>'
     +'</div>';
   }).join("");
 
-  // 할인/조정 입력 폼 (부호 버튼 방식)
+  // 할인/조정 입력 폼 (명칭 → 부호 → 금액 순서)
   var addForm='<div class="qadjust-form">'
     +'<div class="qadjust-form-title">🏷️ 할인 / 조정 항목 추가</div>'
+    +'<input class="qadjust-form-label" id="adj-label" placeholder="명칭 (예: 단골할인, 설치비)" value="'+esc(ADJFORM.label)+'" oninput="setAdjForm(&apos;label&apos;,this.value)" style="width:100%;margin-bottom:7px">'
     +'<div class="qadjust-sign-row">'
       +'<button class="qadjust-sign-btn minus '+(ADJFORM.sign<0?"on":"")+'" onclick="setAdjSign(-1)">➖ 할인</button>'
       +'<button class="qadjust-sign-btn plus '+(ADJFORM.sign>0?"on":"")+'" onclick="setAdjSign(1)">➕ 추가비용</button>'
     +'</div>'
     +'<div class="qadjust-form-row">'
-      +'<input class="qadjust-form-label" id="adj-label" placeholder="명칭 (예: 단골할인, 설치비)" value="'+esc(ADJFORM.label)+'" oninput="setAdjForm(&apos;label&apos;,this.value)">'
-      +'<input class="qadjust-form-amount" id="adj-amount" type="number" inputmode="numeric" placeholder="금액" value="'+esc(ADJFORM.amount)+'" oninput="setAdjForm(&apos;amount&apos;,this.value)">'
+      +'<input class="qadjust-form-amount" id="adj-amount" type="number" inputmode="numeric" placeholder="금액 (VAT 포함)" value="'+esc(ADJFORM.amount)+'" oninput="setAdjForm(&apos;amount&apos;,this.value)" style="flex:1">'
       +'<button class="qadjust-form-btn" onclick="commitAdjust()">추가</button>'
     +'</div>'
-    +'<div class="qadjust-form-hint">💡 위에서 <b style="color:#C53030">할인</b> 또는 <b style="color:#1A73E8">추가비용</b>을 선택하고 금액을 입력하세요 (숫자만)</div>'
+    +'<div class="qadjust-form-hint">💡 <b style="color:#C53030">할인</b>/<b style="color:#1A73E8">추가비용</b> 선택 후 <b>VAT 포함 금액</b>을 입력하세요</div>'
   +'</div>';
 
   var allRows=rows+adjustRows+addForm;
 
   var totalHtml="";
   if(QMODE==="sell"){
-    var s=Math.max(0,supply); // 음수 방지는 안 함 (할인으로 음수 가능성 표시)
-    var vat=Math.round(supply*0.1),total=supply+vat;
+    // 상품 공급가액 + VAT, 그 후 VAT포함 조정액을 총액에 직접 반영
+    var vat=Math.round(supply*0.1);
+    var baseTotal=supply+vat;
+    var total=baseTotal+adjustTotalVat; // 조정액(VAT포함)을 총액에 가감
+    var adjRow=adjustTotalVat!==0?'<div class="qtrow"><span class="qtl">할인/조정 (VAT포함)</span><span class="qtv" style="color:'+(adjustTotalVat<0?"#C53030":"#1A73E8")+'">'+(adjustTotalVat>=0?"+":"")+fmtN(adjustTotalVat)+'원</span></div>':"";
     totalHtml='<div class="qtrow"><span class="qtl">공급가액</span><span class="qtv">'+fmtN(supply)+'원</span></div>'
       +'<div class="qtrow"><span class="qtl">부가세(10%)</span><span class="qtv">'+fmtN(vat)+'원</span></div>'
+      +adjRow
       +'<div class="qtrow main"><span class="qtl">총 합계</span><span class="qtv">'+fmtN(total)+'원</span></div>'
-      +'<div class="qvat">※ 공급가액 '+fmtN(supply)+'원 + VAT '+fmtN(vat)+'원</div>';
+      +'<div class="qvat">※ 공급가 '+fmtN(supply)+'원 + VAT '+fmtN(vat)+'원'+(adjustTotalVat!==0?' '+(adjustTotalVat>=0?"+":"")+fmtN(adjustTotalVat)+'원(조정)':"")+'</div>';
   }else{
-    var mVat=Math.round(monthly*0.1),mTotal=monthly+mVat;
+    var mVat=Math.round(monthly*0.1);
+    var mBaseTotal=monthly+mVat;
+    var mTotal=mBaseTotal+adjustTotalVat;
+    var adjRowM=adjustTotalVat!==0?'<div class="qtrow"><span class="qtl">할인/조정 (VAT포함)</span><span class="qtv" style="color:'+(adjustTotalVat<0?"#C53030":"#1A73E8")+'">'+(adjustTotalVat>=0?"+":"")+fmtN(adjustTotalVat)+'원</span></div>':"";
     totalHtml='<div class="qtrow"><span class="qtl">월 관리비 (공급가)</span><span class="qtv">'+fmtN(monthly)+'원/월</span></div>'
       +'<div class="qtrow"><span class="qtl">부가세(10%)</span><span class="qtv">'+fmtN(mVat)+'원</span></div>'
+      +adjRowM
       +'<div class="qtrow main blue"><span class="qtl" style="font-size:14px;font-weight:800">월 합계 (VAT 포함)</span><span class="qtv" style="color:#1A56DB">'+fmtN(mTotal)+'원/월</span></div>'
-      +'<div class="qvat">※ 공급가 '+fmtN(monthly)+'원 + VAT '+fmtN(mVat)+'원</div>';
+      +'<div class="qvat">※ 공급가 '+fmtN(monthly)+'원 + VAT '+fmtN(mVat)+'원'+(adjustTotalVat!==0?' '+(adjustTotalVat>=0?"+":"")+fmtN(adjustTotalVat)+'원(조정)':"")+'</div>';
   }
   return {items:allRows,total:totalHtml,hasItems:true};
 }
