@@ -429,6 +429,25 @@ input.fiinput{display:none}
   .qbtn-p:hover{background:#1644B0}
   .qbtn-r{background:#fff;color:#888;border:1px solid #D0D0D0;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;width:100%}
   .qbtn-r:hover{background:#F5F5F5;color:#1A1A1A}
+
+  /* ── 가격표 편집 UI ── */
+  .pcard-actions{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+  .pcard-edit-btn{background:#EEF4FF;color:#1A56DB;border:1px solid #C5D8FF;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:2px;flex:1;transition:background .15s}
+  .pcard-edit-btn:hover{background:#DBE8FF}
+  .pcard-del-btn{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:2px;transition:background .15s}
+  .pcard-del-btn:hover{background:#FFE0E0}
+  /* 가격표 모달 폼 */
+  .pm-field{margin-bottom:12px}
+  .pm-label{display:block;font-size:11px;font-weight:700;color:#505050;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+  .pm-input{width:100%;border:1px solid #D0D0D0;padding:8px 10px;font-size:13px;font-family:inherit;color:#1A1A1A;border-radius:2px}
+  .pm-input:focus{outline:none;border-color:var(--green)}
+  .pm-textarea{height:80px;resize:vertical;line-height:1.5}
+  .pm-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pm-img-area{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  .pm-preview{width:100%;max-width:200px;height:120px;object-fit:contain;background:#F7F8FA;border:1px solid var(--line);padding:6px}
+  .pm-img-placeholder{width:100%;max-width:200px;height:100px;background:#F7F8FA;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:#AAA}
+  .pm-img-btn{display:inline-block;background:var(--green);color:#fff;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border-radius:2px}
+  .pm-img-clear{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;border-radius:2px}
 </style>
 </head>
 <body>
@@ -464,11 +483,12 @@ const KT=[[14.1,15.4,16.6,17.7,18.9,20.2,21.4,22.7,23.9,25.2,26.4,27.7,28.9,30.1
 
 const IV=[{id:uid(),date:"2026-04-02",deposit:505000,withdraw:null,category:"capital",taxInvoice:false,memo:"고정비 지출용"},{id:uid(),date:"2026-04-15",deposit:null,withdraw:4400,category:"fee",taxInvoice:false,memo:"하나은행 인증서"},{id:uid(),date:"2026-04-21",deposit:null,withdraw:9690,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:27740,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:88000,category:"fee",taxInvoice:false,memo:"범용인증서 / 1년"}];
 
-const S={tab:"ledger",rows:[],todos:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null};
+var S={tab:"ledger",rows:[],todos:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
 function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");}},400);}
 function saveRows(){fbSave("cashbook/rows",S.rows);}
+function saveProducts(){fbSave("cashbook/products",S.products);}
 function saveTodos(){fbSave("cashbook/todos",S.todos);}
 function setSbar(st){var b=document.getElementById("sbar"),sp=document.getElementById("spill"),st2=document.getElementById("stxt");if(!b||!sp||!st2)return;sp.className="sync-pill "+st;if(st==="ok")st2.textContent="동기화 완료";else if(st==="ing")st2.textContent="연결 중";else st2.textContent="오프라인";}
 
@@ -478,13 +498,25 @@ async function init(){
     if(!snap.exists()){
       await set(ref(db,"cashbook/rows"),IV);
       await set(ref(db,"cashbook/todos"),[]);
+      await set(ref(db,"cashbook/products"),PRODUCTS.map(function(p){return Object.assign({},p);}));
     }
     onValue(ref(db,"cashbook/rows"),function(sn){S.rows=sn.val()?Object.values(sn.val()):[];render();});
     onValue(ref(db,"cashbook/todos"),function(sn){S.todos=sn.val()?Object.values(sn.val()):[];render();});
+    onValue(ref(db,"cashbook/products"),function(sn){
+      if(sn.val()){
+        var arr=Array.isArray(sn.val())?sn.val():Object.values(sn.val());
+        S.products=arr.filter(Boolean);
+      }
+      // products가 없으면 기존 PRODUCTS 기본값 유지
+      if(!S.products||!S.products.length) S.products=PRODUCTS.map(function(p){return Object.assign({},p);});
+      // QTY 재동기화
+      S.products.forEach(function(p){if(QTY[p.id]===undefined)QTY[p.id]=0;});
+      render();
+    });
     setSbar("ok");
   }catch(e){
     setSbar("err");
-    S.rows=IV;S.todos=[];
+    S.rows=IV;S.todos=[];S.products=PRODUCTS.map(function(p){return Object.assign({},p);});
     render();
   }
 }
@@ -722,20 +754,132 @@ var QMODE="sell";
 
 /* ── 가격표 ── */
 function renderPrice(){
-  var cards=PRODUCTS.map(function(p,i){
-    var wide=i===4?"wide":"";
-    var bodyGrid=i===4?'<div class="pcard-name-area"><div class="pcard-name">'+p.name+'</div><div class="pcard-prices"><span class="pcard-buy">매입가 '+fmtN(p.buy)+'원</span><span class="pcard-sell">'+fmtN(p.sell)+'원</span><span class="pcard-vat">VAT 별도</span></div></div><div><div class="pcard-spec">'+p.spec.replace(/\n/g,"<br>")+'</div></div><div><div class="pcard-badges"><span class="pbadge-sell">💳 판매</span><span class="pbadge-monthly">📅 월 관리비 '+(p.monthly>0?fmtN(p.monthly)+"원 ("+p.monthlyNote+")":"무상")+'</span></div></div>'
-      :'<div class="pcard-name">'+p.name+'</div><div class="pcard-prices"><span class="pcard-buy">매입가 '+fmtN(p.buy)+'원</span><span class="pcard-sell">'+fmtN(p.sell)+'원</span><span class="pcard-vat">VAT 별도</span></div><div class="pcard-spec">'+p.spec.replace(/\n/g,"<br>")+'</div><div class="pcard-badges"><span class="pbadge-sell">💳 판매</span><span class="pbadge-monthly">📅 월 관리비 '+(p.monthly>0?fmtN(p.monthly)+"원 ("+p.monthlyNote+")":"무상")+'</span></div>';
-    return '<div class="pcard '+wide+'"><div class="pcard-img"><span class="pcard-num">No.'+(i+1)+'</span><img src="'+p.img+'" alt="'+p.name+'"></div><div class="pcard-body">'+bodyGrid+'</div></div>';
+  var prods=S.products||PRODUCTS;
+  var pm=S.priceModal;
+
+  var cards=prods.map(function(p,i){
+    var imgSrc=p.img||"";
+    return '<div class="pcard">'
+      +'<div class="pcard-img">'
+        +'<span class="pcard-num">No.'+(i+1)+'</span>'
+        +(imgSrc?'<img src="'+imgSrc+'" alt="'+esc(p.name)+'">':'<div style="font-size:32px;color:#DDD">📦</div>')
+      +'</div>'
+      +'<div class="pcard-body">'
+        +'<div class="pcard-name">'+esc(p.name)+'</div>'
+        +'<div class="pcard-prices">'
+          +'<span class="pcard-buy">매입가 '+fmtN(p.buy)+'원</span>'
+          +'<span class="pcard-sell">'+fmtN(p.sell)+'원</span>'
+          +'<span class="pcard-vat">VAT 별도</span>'
+        +'</div>'
+        +'<div class="pcard-spec">'+esc(p.spec||"").split("\n").join("<br>")+'</div>'
+        +'<div class="pcard-badges">'
+          +'<span class="pbadge-sell">💳 판매</span>'
+          +'<span class="pbadge-monthly">📅 월 관리비 '+(p.monthly>0?fmtN(p.monthly)+'원 ('+(p.monthlyNote||"별도")+')':"무상")+'</span>'
+        +'</div>'
+        +'<div class="pcard-actions">'
+          +'<button class="pcard-edit-btn" onclick="openPriceModal(''+p.id+'')">✏️ 수정</button>'
+          +'<button class="pcard-del-btn" onclick="delProduct(''+p.id+'')">🗑 삭제</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
   }).join("");
-  return '<div class="box" style="margin-bottom:10px"><div class="box-head"><span class="box-title">💰 장비 가격표</span><span style="font-size:11px;color:#888">기준일 2025년 5월 · VAT 별도</span></div></div>'
+
+  var modalHtml="";
+  if(pm.show){
+    var f=pm.form;
+    var isEdit=!!pm.editId;
+    modalHtml='<div class="mbg" onclick="closePriceModal()">'
+      +'<div class="modal" onclick="event.stopPropagation()" style="max-width:500px">'
+        +'<div class="mhead"><h3>'+(isEdit?"✏️ 상품 수정":"➕ 상품 추가")+'</h3><button class="mclose" onclick="closePriceModal()">×</button></div>'
+        +'<div class="mbody">'
+          +'<div class="pm-field"><label class="pm-label">상품명 *</label><input class="pm-input" id="pm-name" value="'+esc(f.name)+'" placeholder="예: IMU-NA250P" oninput="pmUpdate('name',this.value)"></div>'
+          +'<div class="pm-field"><label class="pm-label">사양 설명</label><textarea class="pm-input pm-textarea" id="pm-spec" placeholder="사양 정보를 입력하세요..." oninput="pmUpdate('spec',this.value)">'+esc(f.spec)+'</textarea></div>'
+          +'<div class="pm-row">'
+            +'<div class="pm-field"><label class="pm-label">매입가 (원)</label><input class="pm-input" id="pm-buy" type="number" value="'+f.buy+'" placeholder="0" oninput="pmUpdate('buy',this.value)"></div>'
+            +'<div class="pm-field"><label class="pm-label">판매가 (원) *</label><input class="pm-input" id="pm-sell" type="number" value="'+f.sell+'" placeholder="0" oninput="pmUpdate('sell',this.value)"></div>'
+          +'</div>'
+          +'<div class="pm-row">'
+            +'<div class="pm-field"><label class="pm-label">월 관리비 (원)</label><input class="pm-input" id="pm-monthly" type="number" value="'+f.monthly+'" placeholder="0 = 무상" oninput="pmUpdate('monthly',this.value)"></div>'
+            +'<div class="pm-field"><label class="pm-label">관리비 구분</label><select class="pm-input" id="pm-note" onchange="pmUpdate('monthlyNote',this.value)"><option value="별도" '+(f.monthlyNote==="별도"?"selected":"")+'>별도</option><option value="무상" '+(f.monthlyNote==="무상"?"selected":"")+'>무상</option></select></div>'
+          +'</div>'
+          +'<div class="pm-field">'
+            +'<label class="pm-label">상품 이미지</label>'
+            +'<div class="pm-img-area">'
+              +(f.img?'<img src="'+f.img+'" class="pm-preview">':'<div class="pm-img-placeholder">📷 이미지 없음</div>')
+              +'<label class="pm-img-btn">📁 이미지 선택<input type="file" accept="image/*" style="display:none" onchange="pmImgChange(this)"></label>'
+              +(f.img?'<button class="pm-img-clear" onclick="pmUpdate('img','')">× 이미지 제거</button>':"")
+            +'</div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="mact">'
+          +'<button class="bg" onclick="closePriceModal()">취소</button>'
+          +'<button class="btn-green" onclick="savePriceModal()">'+(isEdit?"수정 완료":"상품 추가")+'</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }
+
+  return '<div class="box" style="margin-bottom:10px">'
+      +'<div class="box-head"><span class="box-title">💰 장비 가격표</span>'
+      +'<button class="btn-green" onclick="openPriceModal(null)" style="font-size:12px;padding:6px 12px">+ 상품 추가</button></div>'
+    +'</div>'
     +'<div class="price-grid">'+cards+'</div>'
     +'<div class="box"><div class="box-body" style="font-size:12px;color:#888;line-height:1.8">'
-    +'· 모든 가격은 부가세(VAT) 별도 금액입니다<br>'
-    +'· 월 관리비 옵션은 약정 조건에 따라 상이할 수 있습니다<br>'
-    +'· 세트 구성·수량 구매 시 별도 견적 제공 가능합니다'
-    +'</div></div>';
+      +'· 모든 가격은 부가세(VAT) 별도 금액입니다<br>'
+      +'· 세트 구성·수량 구매 시 별도 견적 제공 가능합니다'
+    +'</div></div>'
+    +modalHtml;
 }
+
+window.openPriceModal=function(id){
+  if(id){
+    var p=(S.products||PRODUCTS).find(function(x){return x.id===id;});
+    if(!p)return;
+    S.priceModal={show:true,editId:id,form:{name:p.name||"",spec:p.spec||"",buy:p.buy||"",sell:p.sell||"",monthly:p.monthly||0,monthlyNote:p.monthlyNote||"별도",img:p.img||""}};
+  }else{
+    S.priceModal={show:true,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:0,monthlyNote:"별도",img:""}};
+  }
+  render();
+};
+window.closePriceModal=function(){S.priceModal.show=false;render();};
+window.pmUpdate=function(f,v){S.priceModal.form[f]=v;};
+window.pmImgChange=function(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>2*1024*1024){alert("이미지 크기는 2MB 이하로 선택해주세요.");return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    S.priceModal.form.img=e.target.result;
+    render();
+  };
+  reader.readAsDataURL(file);
+};
+window.savePriceModal=function(){
+  var f=S.priceModal.form;
+  if(!f.name.trim()){alert("상품명을 입력해주세요.");return;}
+  if(!f.sell){alert("판매가를 입력해주세요.");return;}
+  var prods=S.products?[].concat(S.products):PRODUCTS.map(function(p){return Object.assign({},p);});
+  if(S.priceModal.editId){
+    prods=prods.map(function(p){
+      if(p.id!==S.priceModal.editId)return p;
+      return Object.assign({},p,{name:f.name.trim(),spec:f.spec.trim(),buy:Number(f.buy)||0,sell:Number(f.sell),monthly:Number(f.monthly)||0,monthlyNote:f.monthlyNote,img:f.img});
+    });
+  }else{
+    var newId=uid();
+    prods.push({id:newId,name:f.name.trim(),spec:f.spec.trim(),buy:Number(f.buy)||0,sell:Number(f.sell),monthly:Number(f.monthly)||0,monthlyNote:f.monthlyNote,img:f.img});
+    QTY[newId]=0;
+  }
+  S.products=prods;
+  saveProducts();
+  S.priceModal.show=false;
+  render();
+};
+window.delProduct=function(id){
+  if(!confirm("이 상품을 삭제하시겠습니까?"))return;
+  S.products=(S.products||[]).filter(function(p){return p.id!==id;});
+  saveProducts();
+  render();
+};
+
 
 /* ── 견적서 ── */
 function renderQuote(){
