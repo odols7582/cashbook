@@ -346,11 +346,17 @@ input.fiinput{display:none}
   .qitem-name{max-width:110px}
 
   .qprod-row{padding:10px 14px}
+  .qprod-main{gap:8px}
+  .qprod-left{min-width:0;flex:1}
+  .qprod-left>div{min-width:0}
   .qprod-img{width:40px;height:40px}
-  .qname{font-size:12px}
+  .qname{font-size:12px;word-break:keep-all}
   .qspec{display:none}
-  .qty-btn{width:28px;height:28px;font-size:15px}
-  .qty-inp{width:36px;height:28px;font-size:13px}
+  .qty-ctrl{flex-shrink:0}
+  .qty-btn{width:30px;height:30px;font-size:16px}
+  .qty-inp{width:38px;height:30px;font-size:13px}
+  .qprice-edit-label{width:60px;font-size:11px}
+  .qprice-edit-inp{font-size:12px;padding:7px 8px}
 }
 
 
@@ -381,7 +387,7 @@ input.fiinput{display:none}
   .qbox{background:#fff;border:none;border-radius:18px;overflow:hidden;min-width:0}
   .qbox-head{padding:18px 20px 12px;border-bottom:none;display:flex;align-items:center;justify-content:space-between}
   .qbox-title{font-size:16px;font-weight:700;letter-spacing:-0.3px}
-  .qprod-row{padding:13px 18px;border-bottom:1px solid #F0F0F0;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:background .15s}
+  .qprod-row{padding:13px 18px;border-bottom:1px solid #F0F0F0;display:block;transition:background .15s}
   .qprod-row:last-child{border-bottom:none}
   .qprod-row:hover{background:#FAFFF7}
   .qprod-row.sel{background:#F0FFF6;border-left:3px solid var(--green)}
@@ -518,6 +524,31 @@ input.fiinput{display:none}
   .qdoc-title{font-size:14px;font-weight:600;color:#191F28}
   .qdoc-sub{font-size:11px;color:#8B95A1;margin-top:2px}
   .qdoc-hint{font-size:11px;color:#3182F6;font-weight:500;margin-top:10px;text-align:center}
+
+  /* ── 특약사항 체크 ── */
+  .qspec-check{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;background:#F9FAFB;border:2px solid transparent;border-radius:12px;cursor:pointer;transition:all .15s}
+  .qspec-check:hover{background:#F2F4F6}
+  .qspec-check.on{background:#EBF2FE;border-color:#3182F6}
+  .qspec-box{width:20px;height:20px;border:2px solid #D1D6DB;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;transition:all .15s;margin-top:1px}
+  .qspec-check.on .qspec-box{background:#3182F6;border-color:#3182F6}
+  .qspec-text{font-size:13px;color:#191F28;line-height:1.5}
+  .qspec-divider{font-size:11px;color:#8B95A1;text-align:center;margin:14px 0 10px;position:relative}
+
+  /* ── 견적 가격 수정 ── */
+  .qprod-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+  .qprice-edit{margin-top:12px;padding:12px;background:#EBF2FE;border-radius:12px}
+  .qprice-edit-title{font-size:11px;font-weight:700;color:#3182F6;margin-bottom:8px}
+  .qprice-edit-row.active .qprice-edit-label{color:#1B64DA}
+  .qprice-edit-row.active .qprice-edit-inp{border-color:#3182F6;border-width:2px}
+  .qprice-edit-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qprice-edit-row:last-of-type{margin-bottom:0}
+  .qprice-edit-label{font-size:12px;font-weight:600;color:#3182F6;width:72px;flex-shrink:0}
+  .qprice-edit-inp{flex:1;border:1.5px solid #C5D8FF;background:#fff;padding:8px 10px;font-size:13px;font-family:inherit;border-radius:8px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:#191F28;min-width:0}
+  .qprice-edit-inp:focus{outline:2px solid #3182F6;border-color:#3182F6}
+  .qprice-edit-inp.edited{border-color:#FF8A00;background:#FFF8E6;color:#E65100}
+  .qprice-edit-won{font-size:12px;color:#8B95A1;flex-shrink:0}
+  .qprice-reset{margin-top:8px;width:100%;background:#fff;color:#8B95A1;border:none;padding:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:8px}
+  .qprice-reset:hover{background:#F2F4F6;color:#191F28}
 </style>
 </head>
 <body>
@@ -847,7 +878,10 @@ PRODUCTS.forEach(function(p){QTY[p.id]=0;});
 var QMODE="sell";
 var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
 var ADJFORM={label:"",amount:"",sign:-1}; // 입력 중인 할인 폼 (sign: -1=할인, 1=추가)
-var QSPECIAL=""; // 특약사항
+var QPRICE={}; // 견적별 일회성 가격 오버라이드 {id:{sell, monthly}}
+var QSPECIAL=""; // 특약사항 (자유입력)
+var QSPECPRE=[]; // 선택된 특약 항목 인덱스 배열
+var SPEC_ITEMS=["무상 A/S 1년 (단, 사용자 과실 수리는 수리비 부담)","포스용지 25롤 / 50롤 유상구매 (초기물품 무상지원)","폐업 및 양도양수 시 견적 장비 반납 및 후사업자 계약 이관","포스용지 무상지원"];
 var QDOCS={A:false,B:false}; // 가맹서류 안내 선택 (A:개인, B:법인)
 var DOCS_A=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 공동대표 결제계좌 이용신청서"];
 var DOCS_B=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","법인인감증명서 (3개월 이내)","법인등기부등본 (3개월 이내)","주주명부 (3개월 이내)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 인감증명서, 공동대표 결제계좌 이용신청서"];
@@ -992,25 +1026,48 @@ function renderQuote(){
   var qc=buildQContent();
 
   var prodRows=(S.products||PRODUCTS).map(function(p){
-    return '<div class="qprod-row '+(QTY[String(p.id)]>0?"sel":"")+'" id="qrow-'+p.id+'">'
-      +'<div class="qprod-left">'
-        +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
-        +'<div>'
-          +'<div class="qname">'+p.name+'</div>'
-          +'<div class="qspec">'+p.spec.split('\n').join(' · ')+'</div>'
-          +'<div class="qprices">'
-            +'<span class="qsell">'+fmtN(p.sell)+'원</span>'
-            +'<span class="qvat-tag">VAT 별도</span>'
-            +'<span class="qbuy">매입 '+fmtN(p.buy)+'원</span>'
-            +'<span class="qmon">📅 '+(p.monthly>0?fmtN(p.monthly)+'원':'무상')+'</span>'
+    var pid=String(p.id);
+    var selected=QTY[pid]>0;
+    var curSell=getQSell(p),curMonthly=getQMonthly(p);
+    var sellEdited=QPRICE[pid]&&QPRICE[pid].sell!=null;
+    var monEdited=QPRICE[pid]&&QPRICE[pid].monthly!=null;
+    var sellActive=QMODE==="sell";
+    var editBox=selected?'<div class="qprice-edit">'
+      +'<div class="qprice-edit-title">✏️ 이 견적의 가격 수정</div>'
+      +'<div class="qprice-edit-row'+(sellActive?" active":"")+'">'
+        +'<span class="qprice-edit-label">💳 판매가</span>'
+        +'<input class="qprice-edit-inp'+(sellEdited?" edited":"")+'" type="text" inputmode="numeric" value="'+fmtN(curSell)+'" oninput="setQPrice(&apos;'+p.id+'&apos;,&apos;sell&apos;,this.value)">'
+        +'<span class="qprice-edit-won">원</span>'
+      +'</div>'
+      +'<div class="qprice-edit-row'+(!sellActive?" active":"")+'">'
+        +'<span class="qprice-edit-label">📅 월관리비</span>'
+        +'<input class="qprice-edit-inp'+(monEdited?" edited":"")+'" type="text" inputmode="numeric" value="'+fmtN(curMonthly)+'" oninput="setQPrice(&apos;'+p.id+'&apos;,&apos;monthly&apos;,this.value)">'
+        +'<span class="qprice-edit-won">원</span>'
+      +'</div>'
+      +((sellEdited||monEdited)?'<button class="qprice-reset" onclick="resetQPrice(&apos;'+p.id+'&apos;)">↺ 원래 가격으로</button>':"")
+    +'</div>':"";
+    return '<div class="qprod-row '+(selected?"sel":"")+'" id="qrow-'+p.id+'">'
+      +'<div class="qprod-main">'
+        +'<div class="qprod-left">'
+          +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
+          +'<div>'
+            +'<div class="qname">'+p.name+'</div>'
+            +'<div class="qspec">'+p.spec.split('\n').join(' · ')+'</div>'
+            +'<div class="qprices">'
+              +'<span class="qsell">'+fmtN(curSell)+'원</span>'
+              +'<span class="qvat-tag">VAT 별도</span>'
+              +'<span class="qbuy">매입 '+fmtN(p.buy)+'원</span>'
+              +'<span class="qmon">📅 '+(curMonthly>0?fmtN(curMonthly)+'원':'무상')+'</span>'
+            +'</div>'
           +'</div>'
         +'</div>'
+        +'<div class="qty-ctrl">'
+          +'<button class="qty-btn" onclick="chQty(&apos;'+p.id+'&apos;,-1)">−</button>'
+          +'<input class="qty-inp" type="number" id="qi-'+p.id+'" value="'+QTY[pid]+'" min="0" oninput="inQty(&apos;'+p.id+'&apos;,this.value)">'
+          +'<button class="qty-btn" onclick="chQty(&apos;'+p.id+'&apos;,+1)">+</button>'
+        +'</div>'
       +'</div>'
-      +'<div class="qty-ctrl">'
-        +'<button class="qty-btn" onclick="chQty(&apos;'+p.id+'&apos;,-1)">−</button>'
-        +'<input class="qty-inp" type="number" id="qi-'+p.id+'" value="'+QTY[String(p.id)]+'" min="0" oninput="inQty(&apos;'+p.id+'&apos;,this.value)">'
-        +'<button class="qty-btn" onclick="chQty(&apos;'+p.id+'&apos;,+1)">+</button>'
-      +'</div>'
+      +editBox
     +'</div>';
   }).join("");
 
@@ -1057,9 +1114,11 @@ function renderQuote(){
 
     // ④ 특약사항
     +'<div class="qbox">'
-      +'<div class="qbox-head"><span class="qbox-title">📋 특약사항</span></div>'
+      +'<div class="qbox-head"><span class="qbox-title">📋 특약사항</span><span style="font-size:11px;color:#888">중복 선택 가능</span></div>'
       +'<div style="padding:6px 20px 18px">'
-        +'<textarea class="qspecial-input" id="qm-special" placeholder="특약사항을 입력하세요 (예: 무상 A/S 1년, 설치비 별도 등)" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
+        +SPEC_ITEMS.map(function(t,i){var on=QSPECPRE.indexOf(i)>=0;return '<label class="qspec-check '+(on?"on":"")+'" style="'+(i>0?"margin-top:6px":"")+'"><span class="qspec-box">'+(on?"✓":"")+'</span><span class="qspec-text">'+esc(t)+'</span><input type="checkbox" '+(on?"checked":"")+' onchange="toggleSpec('+i+')" style="display:none"></label>';}).join("")
+        +'<div class="qspec-divider">또는 직접 입력</div>'
+        +'<textarea class="qspecial-input" id="qm-special" placeholder="추가 특약사항을 직접 입력하세요" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
       +'</div>'
     +'</div>'
 
@@ -1105,11 +1164,12 @@ function buildQContent(){
   // 상품 항목 (이미지 포함)
   var rows=sel.map(function(p){
     var q=QTY[String(p.id)];
-    var price=QMODE==="sell"?p.sell:p.monthly;
+    var pSell=getQSell(p),pMon=getQMonthly(p);
+    var price=QMODE==="sell"?pSell:pMon;
     var amt=price*q;
-    supply+=QMODE==="sell"?p.sell*q:0;
-    monthly+=p.monthly*q;
-    var amtStr=QMODE==="sell"?fmtN(p.sell)+"원 × "+q+" = <b>"+fmtN(amt)+"원</b>":(p.monthly>0?fmtN(p.monthly)+"원 × "+q+" = <b>"+fmtN(amt)+"원/월</b>":'<b>무상</b>');
+    supply+=QMODE==="sell"?pSell*q:0;
+    monthly+=pMon*q;
+    var amtStr=QMODE==="sell"?fmtN(pSell)+"원 × "+q+" = <b>"+fmtN(amt)+"원</b>":(pMon>0?fmtN(pMon)+"원 × "+q+" = <b>"+fmtN(amt)+"원/월</b>":'<b>무상</b>');
     var imgHtml=p.img?'<img class="qitem-img" src="'+p.img+'">':'<div class="qitem-img-ph">📦</div>';
     return '<div class="qitem-row">'
       +'<div class="qitem-info">'+imgHtml+'<div class="qitem-name">'+esc(p.name)+'</div></div>'
@@ -1203,8 +1263,19 @@ window.delAdjust=function(id){
 };
 
 function fmtN(n){return Number(n).toLocaleString("ko-KR");}
-window.chQty=function(id,d){id=String(id);QTY[id]=Math.max(0,(QTY[id]||0)+d);var el=document.getElementById("qi-"+id);if(el)el.value=QTY[id];updQRow(id);refreshQPanel();};
-window.inQty=function(id,v){id=String(id);QTY[id]=Math.max(0,parseInt(v)||0);updQRow(id);refreshQPanel();};
+// 견적 가격 조회 (오버라이드 있으면 우선)
+function getQSell(p){var id=String(p.id);return (QPRICE[id]&&QPRICE[id].sell!=null)?QPRICE[id].sell:p.sell;}
+function getQMonthly(p){var id=String(p.id);return (QPRICE[id]&&QPRICE[id].monthly!=null)?QPRICE[id].monthly:p.monthly;}
+window.resetQPrice=function(id){id=String(id);delete QPRICE[id];render();};
+window.setQPrice=function(id,field,v){
+  id=String(id);
+  if(!QPRICE[id])QPRICE[id]={};
+  var raw=(v||"").replace(/[^0-9]/g,"");
+  QPRICE[id][field]=raw===""?null:Number(raw);
+  refreshQPanel();
+};
+window.chQty=function(id,d){id=String(id);var was=QTY[id]>0;QTY[id]=Math.max(0,(QTY[id]||0)+d);var now=QTY[id]>0;var el=document.getElementById("qi-"+id);if(el)el.value=QTY[id];if(was!==now){render();}else{updQRow(id);refreshQPanel();}};
+window.inQty=function(id,v){id=String(id);var was=QTY[id]>0;QTY[id]=Math.max(0,parseInt(v)||0);var now=QTY[id]>0;if(was!==now){render();var el=document.getElementById("qi-"+id);if(el){el.focus();el.value=QTY[id];}}else{updQRow(id);refreshQPanel();}};
 function updQRow(id){var r=document.getElementById("qrow-"+id);if(r)r.className="qprod-row "+(QTY[id]>0?"sel":"");};
 function refreshQPanel(){
   var qc=buildQContent();
@@ -1226,6 +1297,11 @@ function refreshQPanel(){
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.setQSpecial=function(v){QSPECIAL=v;};
+window.toggleSpec=function(i){
+  var idx=QSPECPRE.indexOf(i);
+  if(idx>=0)QSPECPRE.splice(idx,1);else QSPECPRE.push(i);
+  render();
+};
 window.toggleQDocs=function(k){QDOCS[k]=!QDOCS[k];render();};
 window.setQSales=function(f,v){QSALES[f]=v;};
 window.setQClient=function(f,v){QCLIENT[f]=v;};
@@ -1252,7 +1328,7 @@ window.onTelInput=function(el,target){
   else if(target==="sales")QSALES.tel=formatted;
 };
 window.resetQ=function(){
-  ADJUST=[];QSPECIAL="";QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};ADJFORM={label:"",amount:"",sign:-1};
+  ADJUST=[];QPRICE={};QSPECIAL="";QSPECPRE=[];QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};ADJFORM={label:"",amount:"",sign:-1};
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
@@ -1277,7 +1353,7 @@ function collectQuoteData(){
   var co=document.getElementById("qm-co"),nm=document.getElementById("qm-name"),tel=document.getElementById("qm-tel");
   var sDept=document.getElementById("qs-dept"),sRank=document.getElementById("qs-rank"),sName=document.getElementById("qs-name"),sTel=document.getElementById("qs-tel");
   var sel=(S.products||PRODUCTS).filter(function(p){return QTY[String(p.id)]>0;});
-  var items=sel.map(function(p){return{name:p.name,spec:(p.spec||""),img:p.img||"",sell:p.sell,monthly:p.monthly,qty:QTY[String(p.id)]};});
+  var items=sel.map(function(p){return{name:p.name,spec:(p.spec||""),img:p.img||"",sell:getQSell(p),monthly:getQMonthly(p),qty:QTY[String(p.id)]};});
   return{
     mode:QMODE,
     clientCo:((co?co.value:"")||QCLIENT.co)||"고객사",
@@ -1287,6 +1363,7 @@ function collectQuoteData(){
     items:items,
     adjust:ADJUST.map(function(a){return{label:a.label,amount:Number(a.amount)||0};}),
     special:QSPECIAL,
+    specPre:QSPECPRE.map(function(i){return SPEC_ITEMS[i];}),
     docs:{A:QDOCS.A,B:QDOCS.B},
     company:Object.assign({},COMPANY),
     date:new Date().toISOString().slice(0,10)
@@ -1335,7 +1412,12 @@ function buildQuoteHtml(d,opts){
   var hasSales=d.salesDept||d.salesRank||d.salesName||d.salesTel;
 
   var logoHtml=CO.logo?'<img src="'+CO.logo+'" style="width:42px;height:42px;object-fit:contain;border-radius:12px">':'<div style="width:42px;height:42px;background:#F2F4F6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8B95A1">로고</div>';
-  var specialHtml=(d.special||"").trim()?'<div class="card" style="padding:18px 22px;margin-bottom:10px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:8px">특약사항</div><div style="font-size:12px;color:#4E5968;line-height:1.7">'+esc(d.special).split("\n").join("<br>")+'</div></div>':"";
+  var specLines=[];
+  (d.specPre||[]).forEach(function(t){specLines.push("· "+esc(t));});
+  if((d.special||"").trim()){
+    esc(d.special).split("\n").forEach(function(ln){if(ln.trim())specLines.push("· "+ln);});
+  }
+  var specialHtml=specLines.length?'<div class="card" style="padding:18px 22px;margin-bottom:10px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:8px">특약사항</div><div style="font-size:12px;color:#4E5968;line-height:1.8">'+specLines.join("<br>")+'</div></div>':"";
 
   // 가맹서류 안내
   var docsHtml="";
