@@ -377,10 +377,10 @@ input.fiinput{display:none}
   .pcard.wide .pcard-name-area{grid-column:1/-1}
 
   /* ── 견적서 레이아웃 ── */
-  .quote-wrap{display:flex;flex-direction:column;gap:12px}
-  .qbox{background:#fff;border:1px solid var(--line);overflow:hidden;min-width:0}
-  .qbox-head{padding:13px 18px;border-bottom:2px solid var(--green);display:flex;align-items:center;justify-content:space-between}
-  .qbox-title{font-size:14px;font-weight:800}
+  .quote-wrap{display:flex;flex-direction:column;gap:14px}
+  .qbox{background:#fff;border:none;border-radius:18px;overflow:hidden;min-width:0}
+  .qbox-head{padding:18px 20px 12px;border-bottom:none;display:flex;align-items:center;justify-content:space-between}
+  .qbox-title{font-size:16px;font-weight:700;letter-spacing:-0.3px}
   .qprod-row{padding:13px 18px;border-bottom:1px solid #F0F0F0;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:background .15s}
   .qprod-row:last-child{border-bottom:none}
   .qprod-row:hover{background:#FAFFF7}
@@ -1006,7 +1006,7 @@ function renderQuote(){
     // ① 받는 분 + 영업 담당자
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">🧾 견적서</span><span style="font-size:11px;color:#888">'+dateStr+'</span></div>'
-      +'<div style="padding:0 20px 18px">'
+      +'<div style="padding:6px 20px 18px">'
         +'<div class="qsec-label">📩 받는 분</div>'
         +'<div class="qmeta" style="padding:0 0 14px;border-bottom:1px solid #F2F4F6">'
           +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" value="'+esc(QCLIENT.co)+'" oninput="setQClient(&apos;co&apos;,this.value)"></div>'
@@ -1032,7 +1032,7 @@ function renderQuote(){
     // ③ 견적 내역 + 합계
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">📋 견적 내역</span></div>'
-      +'<div style="padding:0 20px 18px">'
+      +'<div style="padding:6px 20px 18px">'
         +'<div class="qmode" style="padding:0 0 14px;border-bottom:none">'
           +'<button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button>'
           +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
@@ -1045,7 +1045,7 @@ function renderQuote(){
     // ④ 특약사항
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">📋 특약사항</span></div>'
-      +'<div style="padding:0 20px 18px">'
+      +'<div style="padding:6px 20px 18px">'
         +'<textarea class="qspecial-input" id="qm-special" placeholder="특약사항을 입력하세요 (예: 무상 A/S 1년, 설치비 별도 등)" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
       +'</div>'
     +'</div>'
