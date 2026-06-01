@@ -508,6 +508,16 @@ input.fiinput{display:none}
   .qsales-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .qsales-input{width:100%;box-sizing:border-box;border:none;background:#F2F4F6;padding:10px 12px;font-size:13px;font-family:inherit;border-radius:10px}
   .qsales-input:focus{outline:2px solid var(--green);background:#fff}
+
+  /* ── 가맹서류 안내 체크 ── */
+  .qdoc-check{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#F9FAFB;border:2px solid transparent;border-radius:14px;cursor:pointer;transition:all .15s}
+  .qdoc-check:hover{background:#F2F4F6}
+  .qdoc-check.on{background:#EBF2FE;border-color:#3182F6}
+  .qdoc-box{width:24px;height:24px;border:2px solid #D1D6DB;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;transition:all .15s}
+  .qdoc-check.on .qdoc-box{background:#3182F6;border-color:#3182F6}
+  .qdoc-title{font-size:14px;font-weight:600;color:#191F28}
+  .qdoc-sub{font-size:11px;color:#8B95A1;margin-top:2px}
+  .qdoc-hint{font-size:11px;color:#3182F6;font-weight:500;margin-top:10px;text-align:center}
 </style>
 </head>
 <body>
@@ -838,6 +848,9 @@ var QMODE="sell";
 var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
 var ADJFORM={label:"",amount:"",sign:-1}; // 입력 중인 할인 폼 (sign: -1=할인, 1=추가)
 var QSPECIAL=""; // 특약사항
+var QDOCS={A:false,B:false}; // 가맹서류 안내 선택 (A:개인, B:법인)
+var DOCS_A=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 공동대표 결제계좌 이용신청서"];
+var DOCS_B=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","법인인감증명서 (3개월 이내)","법인등기부등본 (3개월 이내)","주주명부 (3개월 이내)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 인감증명서, 공동대표 결제계좌 이용신청서"];
 var QSALES={dept:"",rank:"",name:"",tel:""}; // 영업자 정보
 var QCLIENT={co:"",name:"",tel:""}; // 받는분 정보
 // 공급자(자사) 고정 정보
@@ -979,7 +992,7 @@ function renderQuote(){
   var qc=buildQContent();
 
   var prodRows=(S.products||PRODUCTS).map(function(p){
-    return '<div class="qprod-row '+(QTY[p.id]>0?"sel":"")+'" id="qrow-'+p.id+'">'
+    return '<div class="qprod-row '+(QTY[String(p.id)]>0?"sel":"")+'" id="qrow-'+p.id+'">'
       +'<div class="qprod-left">'
         +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
         +'<div>'
@@ -994,9 +1007,9 @@ function renderQuote(){
         +'</div>'
       +'</div>'
       +'<div class="qty-ctrl">'
-        +'<button class="qty-btn" onclick="chQty('+p.id+',-1)">−</button>'
-        +'<input class="qty-inp" type="number" id="qi-'+p.id+'" value="'+QTY[p.id]+'" min="0" oninput="inQty('+p.id+',this.value)">'
-        +'<button class="qty-btn" onclick="chQty('+p.id+',+1)">+</button>'
+        +'<button class="qty-btn" onclick="chQty(&apos;'+p.id+'&apos;,-1)">−</button>'
+        +'<input class="qty-inp" type="number" id="qi-'+p.id+'" value="'+QTY[String(p.id)]+'" min="0" oninput="inQty(&apos;'+p.id+'&apos;,this.value)">'
+        +'<button class="qty-btn" onclick="chQty(&apos;'+p.id+'&apos;,+1)">+</button>'
       +'</div>'
     +'</div>';
   }).join("");
@@ -1050,6 +1063,24 @@ function renderQuote(){
       +'</div>'
     +'</div>'
 
+    // ④-2 가맹서류 안내
+    +'<div class="qbox">'
+      +'<div class="qbox-head"><span class="qbox-title">📑 카드사 가맹서류 안내</span><span style="font-size:11px;color:#888">중복 선택 가능</span></div>'
+      +'<div style="padding:6px 20px 18px">'
+        +'<label class="qdoc-check '+(QDOCS.A?"on":"")+'">'
+          +'<span class="qdoc-box">'+(QDOCS.A?"✓":"")+'</span>'
+          +'<div><div class="qdoc-title">A. 개인사업자 신규가맹</div><div class="qdoc-sub">필요서류 '+DOCS_A.length+'종</div></div>'
+          +'<input type="checkbox" '+(QDOCS.A?"checked":"")+' onchange="toggleQDocs(&apos;A&apos;)" style="display:none">'
+        +'</label>'
+        +'<label class="qdoc-check '+(QDOCS.B?"on":"")+'" style="margin-top:8px">'
+          +'<span class="qdoc-box">'+(QDOCS.B?"✓":"")+'</span>'
+          +'<div><div class="qdoc-title">B. 법인사업자 신규가맹</div><div class="qdoc-sub">필요서류 '+DOCS_B.length+'종</div></div>'
+          +'<input type="checkbox" '+(QDOCS.B?"checked":"")+' onchange="toggleQDocs(&apos;B&apos;)" style="display:none">'
+        +'</label>'
+        +((QDOCS.A||QDOCS.B)?'<div class="qdoc-hint">✓ 선택한 서류 안내가 견적서 하단에 표기됩니다</div>':"")
+      +'</div>'
+    +'</div>'
+
     // ⑤ 견적서 발행
     +'<div class="qbox">'
       +'<div style="padding:18px 20px">'
@@ -1066,14 +1097,14 @@ function renderQuote(){
 }
 
 function buildQContent(){
-  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[String(p.id)]>0;});
   var hasItems=sel.length>0||ADJUST.length>0;
   if(!hasItems) return {items:'<div class="qempty">장비를 선택하면 자동으로 표시됩니다</div>',total:"",hasItems:false};
 
   var supply=0,monthly=0;
   // 상품 항목 (이미지 포함)
   var rows=sel.map(function(p){
-    var q=QTY[p.id];
+    var q=QTY[String(p.id)];
     var price=QMODE==="sell"?p.sell:p.monthly;
     var amt=price*q;
     supply+=QMODE==="sell"?p.sell*q:0;
@@ -1172,8 +1203,8 @@ window.delAdjust=function(id){
 };
 
 function fmtN(n){return Number(n).toLocaleString("ko-KR");}
-window.chQty=function(id,d){QTY[id]=Math.max(0,(QTY[id]||0)+d);var el=document.getElementById("qi-"+id);if(el)el.value=QTY[id];updQRow(id);refreshQPanel();};
-window.inQty=function(id,v){QTY[id]=Math.max(0,parseInt(v)||0);updQRow(id);refreshQPanel();};
+window.chQty=function(id,d){id=String(id);QTY[id]=Math.max(0,(QTY[id]||0)+d);var el=document.getElementById("qi-"+id);if(el)el.value=QTY[id];updQRow(id);refreshQPanel();};
+window.inQty=function(id,v){id=String(id);QTY[id]=Math.max(0,parseInt(v)||0);updQRow(id);refreshQPanel();};
 function updQRow(id){var r=document.getElementById("qrow-"+id);if(r)r.className="qprod-row "+(QTY[id]>0?"sel":"");};
 function refreshQPanel(){
   var qc=buildQContent();
@@ -1195,6 +1226,7 @@ function refreshQPanel(){
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.setQSpecial=function(v){QSPECIAL=v;};
+window.toggleQDocs=function(k){QDOCS[k]=!QDOCS[k];render();};
 window.setQSales=function(f,v){QSALES[f]=v;};
 window.setQClient=function(f,v){QCLIENT[f]=v;};
 // 전화번호 하이픈 자동 포맷
@@ -1220,7 +1252,7 @@ window.onTelInput=function(el,target){
   else if(target==="sales")QSALES.tel=formatted;
 };
 window.resetQ=function(){
-  ADJUST=[];QSPECIAL="";QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};ADJFORM={label:"",amount:"",sign:-1};
+  ADJUST=[];QSPECIAL="";QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};ADJFORM={label:"",amount:"",sign:-1};
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
@@ -1244,8 +1276,8 @@ window.uploadLogo=function(input){
 function collectQuoteData(){
   var co=document.getElementById("qm-co"),nm=document.getElementById("qm-name"),tel=document.getElementById("qm-tel");
   var sDept=document.getElementById("qs-dept"),sRank=document.getElementById("qs-rank"),sName=document.getElementById("qs-name"),sTel=document.getElementById("qs-tel");
-  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
-  var items=sel.map(function(p){return{name:p.name,spec:(p.spec||""),img:p.img||"",sell:p.sell,monthly:p.monthly,qty:QTY[p.id]};});
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[String(p.id)]>0;});
+  var items=sel.map(function(p){return{name:p.name,spec:(p.spec||""),img:p.img||"",sell:p.sell,monthly:p.monthly,qty:QTY[String(p.id)]};});
   return{
     mode:QMODE,
     clientCo:((co?co.value:"")||QCLIENT.co)||"고객사",
@@ -1255,6 +1287,7 @@ function collectQuoteData(){
     items:items,
     adjust:ADJUST.map(function(a){return{label:a.label,amount:Number(a.amount)||0};}),
     special:QSPECIAL,
+    docs:{A:QDOCS.A,B:QDOCS.B},
     company:Object.assign({},COMPANY),
     date:new Date().toISOString().slice(0,10)
   };
@@ -1304,6 +1337,29 @@ function buildQuoteHtml(d,opts){
   var logoHtml=CO.logo?'<img src="'+CO.logo+'" style="width:42px;height:42px;object-fit:contain;border-radius:12px">':'<div style="width:42px;height:42px;background:#F2F4F6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8B95A1">로고</div>';
   var specialHtml=(d.special||"").trim()?'<div class="card" style="padding:18px 22px;margin-bottom:10px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:8px">특약사항</div><div style="font-size:12px;color:#4E5968;line-height:1.7">'+esc(d.special).split("\n").join("<br>")+'</div></div>':"";
 
+  // 가맹서류 안내
+  var docsHtml="";
+  var dc=d.docs||{};
+  if(dc.A||dc.B){
+    var docsBody="";
+    if(dc.A){
+      docsBody+='<div style="margin-bottom:'+(dc.B?"16px":"0")+'">'
+        +'<div style="font-size:12px;font-weight:700;color:#3182F6;margin-bottom:8px">A. 개인사업자 신규가맹</div>'
+        +'<ol style="margin:0;padding-left:18px;font-size:11px;color:#4E5968;line-height:1.9">'+DOCS_A.map(function(t){return "<li>"+esc(t)+"</li>";}).join("")+'</ol>'
+      +'</div>';
+    }
+    if(dc.B){
+      docsBody+='<div>'
+        +'<div style="font-size:12px;font-weight:700;color:#3182F6;margin-bottom:8px">B. 법인사업자 신규가맹</div>'
+        +'<ol style="margin:0;padding-left:18px;font-size:11px;color:#4E5968;line-height:1.9">'+DOCS_B.map(function(t){return "<li>"+esc(t)+"</li>";}).join("")+'</ol>'
+      +'</div>';
+    }
+    docsHtml='<div class="card" style="padding:18px 22px;margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:12px">📑 카드사 가맹 필요서류 안내</div>'
+      +docsBody
+    +'</div>';
+  }
+
   var shareBtns=opts.showShareBtns?'<div class="noprint" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:99"><button onclick="window.print()" style="background:#3182F6;color:#fff;border:none;padding:13px 22px;font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;box-shadow:0 4px 16px rgba(49,130,246,.35)">🖨️ PDF 저장</button></div>':"";
 
   var body='<div class="wrap">'
@@ -1348,6 +1404,7 @@ function buildQuoteHtml(d,opts){
       +'<div style="background:#F9FAFB;border-radius:12px;padding:12px 14px"><div style="font-size:14px;font-weight:600">'+esc(CO.bank)+" "+esc(CO.account)+'</div><div style="font-size:11px;color:#8B95A1;margin-top:2px">예금주 '+esc(CO.holder)+'</div></div>'
     +'</div>'
     + specialHtml
+    + docsHtml
     +'<div class="card" style="padding:18px 22px">'
       +'<div style="font-size:13px;font-weight:600;margin-bottom:10px">공급자 정보</div>'
       +'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">상호</span><span style="color:#4E5968">'+esc(CO.name)+'</span></div>'
@@ -1372,7 +1429,7 @@ function buildQuoteHtml(d,opts){
 
 // ── 견적서 발행 (인쇄 미리보기 새 창) ──
 window.printQuote=function(){
-  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[String(p.id)]>0;});
   if(!sel.length&&!ADJUST.length){alert("견적할 상품을 선택해주세요.");return;}
   var d=collectQuoteData();
   var html=buildQuoteHtml(d,{showShareBtns:true});
@@ -1383,7 +1440,7 @@ window.printQuote=function(){
 
 // ── 견적 링크 생성 (Firebase 저장 → 공유 URL) ──
 window.shareQuote=async function(){
-  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[String(p.id)]>0;});
   if(!sel.length&&!ADJUST.length){alert("견적할 상품을 선택해주세요.");return;}
   var d=collectQuoteData();
   var qid=uid()+uid().slice(0,3);
