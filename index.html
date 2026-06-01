@@ -448,6 +448,22 @@ input.fiinput{display:none}
   .pm-img-placeholder{width:100%;max-width:200px;height:100px;background:#F7F8FA;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:#AAA}
   .pm-img-btn{display:inline-block;background:var(--green);color:#fff;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border-radius:2px}
   .pm-img-clear{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;border-radius:2px}
+
+  /* ── 견적 항목 이미지 + 할인 ── */
+  .qitem-info{display:flex;align-items:center;gap:8px;min-width:0}
+  .qitem-img{width:32px;height:32px;object-fit:contain;background:#F7F8FA;border:1px solid #EEE;flex-shrink:0;padding:2px}
+  .qitem-img-ph{width:32px;height:32px;background:#F7F8FA;border:1px solid #EEE;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .qadd-adjust{background:#FFF8E1;color:#E65100;border:1px dashed #FFB74D;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:2px;width:100%}
+  .qadd-adjust:hover{background:#FFF3D0}
+  .qadjust-row{background:#FFFBF0}
+  .qadjust-icon{font-size:16px;flex-shrink:0}
+  .qadjust-label{border:1px solid #FFD9A0;background:#fff;padding:5px 8px;font-size:12px;font-family:inherit;border-radius:2px;width:100%;min-width:0}
+  .qadjust-label:focus{outline:none;border-color:#FF9800}
+  .qadjust-amt{display:flex;align-items:center;gap:2px}
+  .qadjust-input{border:1px solid #FFD9A0;background:#fff;padding:5px 6px;font-size:12px;font-family:inherit;border-radius:2px;width:80px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .qadjust-input:focus{outline:none;border-color:#FF9800}
+  .qadjust-del{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;width:22px;height:22px;font-size:13px;cursor:pointer;font-family:inherit;border-radius:2px;line-height:1;flex-shrink:0;margin-left:4px}
+  .qadjust-del:hover{background:#FFE0E0}
 </style>
 </head>
 <body>
@@ -751,6 +767,7 @@ const PRODUCTS=[
 var QTY={};
 PRODUCTS.forEach(function(p){QTY[p.id]=0;});
 var QMODE="sell";
+var ADJUST=[]; // 할인/조정 항목 {id, label, amount}
 
 /* ── 가격표 ── */
 function renderPrice(){
@@ -949,8 +966,11 @@ function renderQuote(){
 
 function buildQContent(){
   var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
-  if(!sel.length) return {items:'<div class="qempty">장비를 선택하면 자동으로 표시됩니다</div>',total:"",hasItems:false};
+  var hasItems=sel.length>0||ADJUST.length>0;
+  if(!hasItems) return {items:'<div class="qempty">장비를 선택하면 자동으로 표시됩니다</div>',total:"",hasItems:false};
+
   var supply=0,monthly=0;
+  // 상품 항목 (이미지 포함)
   var rows=sel.map(function(p){
     var q=QTY[p.id];
     var price=QMODE==="sell"?p.sell:p.monthly;
@@ -958,11 +978,44 @@ function buildQContent(){
     supply+=QMODE==="sell"?p.sell*q:0;
     monthly+=p.monthly*q;
     var amtStr=QMODE==="sell"?fmtN(p.sell)+"원 × "+q+" = <b>"+fmtN(amt)+"원</b>":(p.monthly>0?fmtN(p.monthly)+"원 × "+q+" = <b>"+fmtN(amt)+"원/월</b>":'<b>무상</b>');
-    return '<div class="qitem-row"><div class="qitem-name">'+p.name+'</div><div class="qitem-qty">'+q+'대</div><div class="qitem-amt">'+amtStr+'</div></div>';
+    var imgHtml=p.img?'<img class="qitem-img" src="'+p.img+'">':'<div class="qitem-img-ph">📦</div>';
+    return '<div class="qitem-row">'
+      +'<div class="qitem-info">'+imgHtml+'<div class="qitem-name">'+esc(p.name)+'</div></div>'
+      +'<div class="qitem-qty">'+q+'대</div>'
+      +'<div class="qitem-amt">'+amtStr+'</div>'
+    +'</div>';
   }).join("");
-  var vat=Math.round(supply*0.1),total=supply+vat;
+
+  // 할인/조정 항목
+  var adjustSum=0;
+  var adjustRows=ADJUST.map(function(a){
+    var amt=Number(a.amount)||0;
+    adjustSum+=amt;
+    if(QMODE==="sell")supply+=amt; else monthly+=amt;
+    var sign=amt>=0?"+":"";
+    var color=amt>=0?"#1A73E8":"#C53030";
+    return '<div class="qitem-row qadjust-row">'
+      +'<div class="qitem-info">'
+        +'<span class="qadjust-icon">'+(amt<0?"🏷️":"➕")+'</span>'
+        +'<input class="qadjust-label" value="'+esc(a.label)+'" placeholder="할인/조정 명칭" oninput="updAdjust(&apos;'+a.id+'&apos;,&apos;label&apos;,this.value)">'
+      +'</div>'
+      +'<div class="qitem-qty"></div>'
+      +'<div class="qitem-amt qadjust-amt">'
+        +'<input class="qadjust-input" type="number" value="'+a.amount+'" placeholder="0" oninput="updAdjust(&apos;'+a.id+'&apos;,&apos;amount&apos;,this.value)" style="color:'+color+'">'
+        +'<span style="color:'+color+';font-weight:700;margin-left:2px">원</span>'
+        +'<button class="qadjust-del" onclick="delAdjust(&apos;'+a.id+'&apos;)">×</button>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+
+  var addBtn='<div style="padding:8px 0;text-align:center"><button class="qadd-adjust" onclick="addAdjust()">+ 할인 / 조정 항목 추가</button></div>';
+
+  var allRows=rows+adjustRows+addBtn;
+
   var totalHtml="";
   if(QMODE==="sell"){
+    var s=Math.max(0,supply); // 음수 방지는 안 함 (할인으로 음수 가능성 표시)
+    var vat=Math.round(supply*0.1),total=supply+vat;
     totalHtml='<div class="qtrow"><span class="qtl">공급가액</span><span class="qtv">'+fmtN(supply)+'원</span></div>'
       +'<div class="qtrow"><span class="qtl">부가세(10%)</span><span class="qtv">'+fmtN(vat)+'원</span></div>'
       +'<div class="qtrow main"><span class="qtl">총 합계</span><span class="qtv">'+fmtN(total)+'원</span></div>'
@@ -974,8 +1027,34 @@ function buildQContent(){
       +'<div class="qtrow main blue"><span class="qtl" style="font-size:14px;font-weight:800">월 합계 (VAT 포함)</span><span class="qtv" style="color:#1A56DB">'+fmtN(mTotal)+'원/월</span></div>'
       +'<div class="qvat">※ 공급가 '+fmtN(monthly)+'원 + VAT '+fmtN(mVat)+'원</div>';
   }
-  return {items:rows,total:totalHtml,hasItems:true};
+  return {items:allRows,total:totalHtml,hasItems:true};
 }
+window.addAdjust=function(){
+  ADJUST.push({id:uid(),label:"할인",amount:0});
+  render();
+};
+window.updAdjust=function(id,field,val){
+  ADJUST=ADJUST.map(function(a){
+    if(a.id!==id)return a;
+    var v=val;
+    if(field==="amount")v=val===""||val==="-"?val:Number(val);
+    return Object.assign({},a,{[field]:v});
+  });
+  // 금액 변경 시 합계만 갱신 (label은 입력 중이라 전체 render 안 함)
+  if(field==="amount")refreshQTotalOnly();
+};
+function refreshQTotalOnly(){
+  var qc=buildQContent();
+  var totalEl=document.getElementById("q-total-area");
+  if(totalEl&&qc.hasItems){
+    totalEl.innerHTML='<div class="qtotal">'+qc.total+'</div>';
+  }
+}
+window.delAdjust=function(id){
+  ADJUST=ADJUST.filter(function(a){return a.id!==id;});
+  render();
+};
+
 function fmtN(n){return Number(n).toLocaleString("ko-KR");}
 window.chQty=function(id,d){QTY[id]=Math.max(0,(QTY[id]||0)+d);var el=document.getElementById("qi-"+id);if(el)el.value=QTY[id];updQRow(id);refreshQPanel();};
 window.inQty=function(id,v){QTY[id]=Math.max(0,parseInt(v)||0);updQRow(id);refreshQPanel();};
@@ -1000,6 +1079,7 @@ function refreshQPanel(){
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.resetQ=function(){
+  ADJUST=[];
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
