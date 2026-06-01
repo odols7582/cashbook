@@ -479,6 +479,19 @@ input.fiinput{display:none}
   .qadjust-form-hint{font-size:11px;color:#999;margin-top:7px;line-height:1.5}
   .qadjust-del{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;width:20px;height:20px;font-size:12px;cursor:pointer;font-family:inherit;border-radius:2px;line-height:1;flex-shrink:0;margin-left:6px}
   .qadjust-del:hover{background:#FFE0E0}
+
+  /* ── 특약사항 ── */
+  .qspecial{padding:12px 14px;border-top:1px solid #F0F0F0}
+  .qspecial-label{display:block;font-size:11px;font-weight:700;color:#505050;margin-bottom:6px}
+  .qspecial-input{width:100%;border:1px solid #D0D0D0;padding:8px 10px;font-size:12px;font-family:inherit;color:#1A1A1A;border-radius:2px;height:70px;resize:vertical;line-height:1.5}
+  .qspecial-input:focus{outline:none;border-color:var(--green)}
+
+  /* ── 할인/조정 부호 버튼 ── */
+  .qadjust-sign-row{display:flex;gap:6px;margin-bottom:8px}
+  .qadjust-sign-btn{flex:1;padding:8px;border:1.5px solid #E0E0E0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-radius:3px;transition:all .15s;color:#999}
+  .qadjust-sign-btn.minus.on{background:#FFF0F0;border-color:#E03030;color:#C53030}
+  .qadjust-sign-btn.plus.on{background:#EEF4FF;border-color:#1A73E8;color:#1A56DB}
+  .qadjust-sign-btn:hover{border-color:#BBB}
 </style>
 </head>
 <body>
@@ -783,7 +796,8 @@ var QTY={};
 PRODUCTS.forEach(function(p){QTY[p.id]=0;});
 var QMODE="sell";
 var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
-var ADJFORM={label:"",amount:""}; // 입력 중인 할인 폼
+var ADJFORM={label:"",amount:"",sign:-1}; // 입력 중인 할인 폼 (sign: -1=할인, 1=추가)
+var QSPECIAL=""; // 특약사항
 
 /* ── 가격표 ── */
 function renderPrice(){
@@ -964,6 +978,10 @@ function renderQuote(){
 
         +'<div class="qinner-right">'
           +'<div id="q-total-area" style="flex:1">'+(qc.hasItems?'<div class="qtotal">'+qc.total+'</div>':"")+'</div>'
+          +'<div class="qspecial">'
+            +'<label class="qspecial-label">📋 특약사항</label>'
+            +'<textarea class="qspecial-input" id="qm-special" placeholder="특약사항을 입력하세요 (예: 무상 A/S 1년, 설치비 별도 등)" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
+          +'</div>'
           +'<div class="qactions">'
             +'<button class="qbtn-p" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>'
             +'<button class="qbtn-r" onclick="resetQ()">↺ 초기화</button>'
@@ -1021,15 +1039,19 @@ function buildQContent(){
     +'</div>';
   }).join("");
 
-  // 할인/조정 입력 폼
+  // 할인/조정 입력 폼 (부호 버튼 방식)
   var addForm='<div class="qadjust-form">'
     +'<div class="qadjust-form-title">🏷️ 할인 / 조정 항목 추가</div>'
+    +'<div class="qadjust-sign-row">'
+      +'<button class="qadjust-sign-btn minus '+(ADJFORM.sign<0?"on":"")+'" onclick="setAdjSign(-1)">➖ 할인</button>'
+      +'<button class="qadjust-sign-btn plus '+(ADJFORM.sign>0?"on":"")+'" onclick="setAdjSign(1)">➕ 추가비용</button>'
+    +'</div>'
     +'<div class="qadjust-form-row">'
-      +'<input class="qadjust-form-label" id="adj-label" placeholder="명칭 (예: 할인, 설치비)" value="'+esc(ADJFORM.label)+'" oninput="ADJFORM.label=this.value">'
-      +'<input class="qadjust-form-amount" id="adj-amount" type="number" placeholder="금액" value="'+esc(ADJFORM.amount)+'" oninput="ADJFORM.amount=this.value">'
+      +'<input class="qadjust-form-label" id="adj-label" placeholder="명칭 (예: 단골할인, 설치비)" value="'+esc(ADJFORM.label)+'" oninput="setAdjForm(&apos;label&apos;,this.value)">'
+      +'<input class="qadjust-form-amount" id="adj-amount" type="number" inputmode="numeric" placeholder="금액" value="'+esc(ADJFORM.amount)+'" oninput="setAdjForm(&apos;amount&apos;,this.value)">'
       +'<button class="qadjust-form-btn" onclick="commitAdjust()">추가</button>'
     +'</div>'
-    +'<div class="qadjust-form-hint">💡 할인은 <b style="color:#C53030">마이너스(-)</b>, 추가비용은 <b style="color:#1A73E8">플러스(+)</b>로 입력</div>'
+    +'<div class="qadjust-form-hint">💡 위에서 <b style="color:#C53030">할인</b> 또는 <b style="color:#1A73E8">추가비용</b>을 선택하고 금액을 입력하세요 (숫자만)</div>'
   +'</div>';
 
   var allRows=rows+adjustRows+addForm;
@@ -1051,14 +1073,20 @@ function buildQContent(){
   }
   return {items:allRows,total:totalHtml,hasItems:true};
 }
+window.setAdjForm=function(f,v){ADJFORM[f]=v;};
+window.setAdjSign=function(s){ADJFORM.sign=s;render();};
 window.commitAdjust=function(){
-  var label=(ADJFORM.label||"").trim();
-  var amount=ADJFORM.amount;
-  if(amount===""||amount==="-"||isNaN(Number(amount))){alert("금액을 입력해주세요. (할인은 -, 추가비용은 +)");return;}
-  if(Number(amount)===0){alert("0원은 추가할 수 없습니다.");return;}
-  if(!label)label=Number(amount)<0?"할인":"추가비용";
-  ADJUST.push({id:uid(),label:label,amount:Number(amount)});
-  ADJFORM={label:"",amount:""};
+  var le=document.getElementById("adj-label"),ae=document.getElementById("adj-amount");
+  var label=((le?le.value:ADJFORM.label)||"").trim();
+  var raw=ae?ae.value:ADJFORM.amount;
+  var num=Math.abs(Number(raw)); // 절대값으로 받음
+  if(raw===""||isNaN(num)){alert("금액을 입력해주세요.");return;}
+  if(num===0){alert("0원은 추가할 수 없습니다.");return;}
+  var sign=ADJFORM.sign||-1;
+  var amount=num*sign; // 부호 버튼에 따라 +/- 적용
+  if(!label)label=sign<0?"할인":"추가비용";
+  ADJUST.push({id:uid(),label:label,amount:amount});
+  ADJFORM={label:"",amount:"",sign:ADJFORM.sign}; // 부호는 유지
   render();
 };
 window.delAdjust=function(id){
@@ -1089,8 +1117,9 @@ function refreshQPanel(){
 }
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
+window.setQSpecial=function(v){QSPECIAL=v;};
 window.resetQ=function(){
-  ADJUST=[];
+  ADJUST=[];QSPECIAL="";ADJFORM={label:"",amount:"",sign:-1};
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
