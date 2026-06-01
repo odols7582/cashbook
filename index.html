@@ -427,6 +427,8 @@ input.fiinput{display:none}
   .qactions{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
   .qbtn-p{background:var(--green);color:#fff;border:none;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;transition:all .15s;border-radius:12px}
   .qbtn-p:hover{background:var(--green2)}.qbtn-p:active{transform:scale(.98)}
+  .qbtn-p2{background:#EBF2FE;color:var(--green);border:none;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;transition:all .15s;border-radius:12px}
+  .qbtn-p2:hover{background:#D8E8FD}.qbtn-p2:active{transform:scale(.98)}
   .qbtn-r{background:#F2F4F6;color:var(--soft);border:none;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;border-radius:12px}
   .qbtn-r:hover{background:#E5E8EB}
   .qbtn-logo{flex:1;background:#EBF2FE;color:var(--green);border:none;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:12px;text-align:center;display:flex;align-items:center;justify-content:center}
@@ -498,6 +500,7 @@ input.fiinput{display:none}
   /* ── 영업 담당자 ── */
   .qsales{padding:12px 14px;border-top:1px solid #F0F0F0}
   .qsales-label{display:block;font-size:11px;font-weight:700;color:#505050;margin-bottom:6px}
+  .qsec-label{font-size:12px;font-weight:700;color:var(--soft);margin-bottom:8px}
   .qsales-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .qsales-input{width:100%;box-sizing:border-box;border:none;background:#F2F4F6;padding:10px 12px;font-size:13px;font-family:inherit;border-radius:10px}
   .qsales-input:focus{outline:2px solid var(--green);background:#fff}
@@ -546,6 +549,12 @@ function saveTodos(){fbSave("cashbook/todos",S.todos);}
 function setSbar(st){var b=document.getElementById("sbar"),sp=document.getElementById("spill"),st2=document.getElementById("stxt");if(!b||!sp||!st2)return;sp.className="sync-pill "+st;if(st==="ok")st2.textContent="동기화 완료";else if(st==="ing")st2.textContent="연결 중";else st2.textContent="오프라인";}
 
 async function init(){
+  // 공유 링크로 접속 시 견적 뷰어 모드
+  var urlParams=new URLSearchParams(window.location.search);
+  var quoteId=urlParams.get("q");
+  if(quoteId){
+    return showSharedQuote(quoteId);
+  }
   try{
     var snap=await get(ref(db,"cashbook"));
     if(!snap.exists()){
@@ -592,6 +601,7 @@ function render(){
   else if(S.tab==="quote")body=renderQuote();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
+  if(S.modal==="share")body+=renderShareModal();
   root.innerHTML=
     '<div class="topbar"><div class="topbar-inner">'
     +'<a class="logo"><div class="logo-icon">장</div><div><div class="logo-text">사업자장부</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
@@ -772,6 +782,19 @@ window.setTF=function(f){S.todo.filter=f;render();};
 
 /* ── 백업 ───────────────────── */
 window.openBackup=function(){S.modal="backup";render();};
+function renderShareModal(){
+  return '<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="max-width:440px"><div class="mhead"><h3>🔗 견적서 링크 공유</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody">'
+    +'<div style="background:#EBF2FE;border-radius:12px;padding:16px;margin-bottom:14px;text-align:center">'
+      +'<div style="font-size:13px;color:#3182F6;font-weight:600;margin-bottom:4px">✓ 링크가 생성되었어요</div>'
+      +'<div style="font-size:12px;color:#8B95A1">'+esc(S.shareClient||"")+'님께 보낼 견적서 링크입니다</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:12px">'
+      +'<input id="share-url-input" class="qmeta-input" readonly value="'+esc(S.shareUrl||"")+'" style="flex:1;font-size:12px" onclick="this.select()">'
+    +'</div>'
+    +'<button id="copy-btn" class="btn-green" onclick="copyShareLink()" style="width:100%;padding:12px;font-size:14px;margin-bottom:8px">🔗 링크 복사</button>'
+    +'<div style="font-size:11px;color:#8B95A1;line-height:1.6;text-align:center">링크를 받은 분은 앱 설치 없이 견적서를 보고<br>PDF로 저장할 수 있어요</div>'
+    +'</div></div></div>';
+}
 window.closeModal=function(){S.modal=null;render();};
 function renderBackup(){
   return'<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()"><div class="mhead"><h3>💾 백업 · 복원</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody"><div class="bsec"><h4>백업 다운로드</h4><p>모든 데이터를 JSON 파일로 저장합니다.</p><button class="btn-green" onclick="expBackup()">백업 파일 다운로드</button></div><div class="bsec"><h4>백업 복원</h4><p>이전에 저장한 JSON 파일로 복원합니다.<br><b style="color:#E03030">현재 데이터가 덮어씌워집니다.</b></p><label class="filabel">파일 선택<input type="file" class="fiinput" accept=".json" onchange="impBackup(this)"></label></div><div class="bsec"><h4>CSV 내보내기</h4><p>거래내역을 CSV로 내보냅니다. (세무사용)</p><button class="btn-line" onclick="expCSV()">CSV 다운로드</button></div></div><div class="mact"><button class="btn-line" onclick="closeModal()">닫기</button></div></div></div>';
@@ -812,6 +835,7 @@ var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
 var ADJFORM={label:"",amount:"",sign:-1}; // 입력 중인 할인 폼 (sign: -1=할인, 1=추가)
 var QSPECIAL=""; // 특약사항
 var QSALES={dept:"",rank:"",name:"",tel:""}; // 영업자 정보
+var QCLIENT={co:"",name:"",tel:""}; // 받는분 정보
 // 공급자(자사) 고정 정보
 var COMPANY={name:"라인",bizno:"541-22-00217",ceo:"안익현",addr:"경기도 양주시 고읍남로39번길 129-10. 101호",tel:"",bank:"하나은행",account:"757-910358-76807",holder:"안익현",slogan:"POS · 키오스크 · 카드단말기 전문",logo:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAADJCAIAAACBsD99AAAg6klEQVR42u2de3RU1d339z6XuU8ykxsYAglgfERAhMhVRZH2hRcaywuUR1S0KiyK9UKLSwRtq1Yt9LXeWgqC0Xp/VkC8IGIRsQVcMVK5CYb7RQOSkMwkmTlzPefs549NxogKyZyTyZB8P2t1La0zZ845Oftzfr/fvlHGGAEAgLYg4BYAACAOAADEAQCAOAAAEAcAAOIAAACIAwAAcQAAIA4AAMQBAIA4AAAA4gAAQBwAAIgDAABxAAAgDgAAgDgAABAHAADiAABAHAAAiAMAAHEAAADEAQCAOAAAEAcAAOIAAEAcAAAAcQAAIA4AAMQBAIA4AAAQBwAAQBwAAIgDAABxAAAgDgAAxAEAABBHe8Pa+fMAdBgSbkG7QX9UEIwSSghjjLCELij/3+kvUXbWQwAAcXTaeIOSRPNnpyXACCGE6RqhlAgCJbSlGxghRNcZY5QKVODuYLAHSMe3ImOIkNvVHQmHMMIYI4QKzelhPBZp8MfDiq6qVJRlu83myaIW6+nv6johhAgCtAEQcXTNXIUSxpjOqChQQmI1Jxo+qwhtrYgfPqjV1aqBJqaqVJAkl0vMyZH6FDuHDMsYMcrWo5AQous6pZRQ2AMg4uhq6DoRBEJI6MDe2vJXQx+vZyePWzRVFGUqSYJACaWUEV3XNTWu6ZpGBJbXzXrVmO7TbnYOvIxHH9/GKQBAHJ0/W9F0KgqaEqxe8dfAylclX73VZhVkCyOUEUaay6O8MkqJQCihhLF4PBaJxN0Zjkn/XTBnruzNhjsAxNEpqxmENXeMJP5PputUEEP79nz1yEL2n0/tLieVJF3XyTnvOSUCFZmuRhRF/68BBQ///4xBQ5iuo+QBII7OqY+EOpiuUUEMfrbl6L132etrJZezVcrg36WMMkoIFURBD4UCbk/BI4uzfjKRHxM3GkAcnVQhuk4FIbit8uhdtzuDAWq1MU1Npl+VESqKJBYLSHLBU895r7oW7gAQR6cMOihhOqFC7OSJA7f+t736qOCwM00lRCAsMbCrjQgCicaCWbkXrnjNfuF/MZ1RgWB8B+hAUG8z1xqnB2swXTv254etRw8IDjtTtebgoa3WaB5JquvUZnXUHP/qsd+xaPTbrAgAiKMThG+EUKbrlAr+f66JfLhWdruZphFKk7jPlDWbiFtH0yS3W/t0c82q16lAGdNxuwHE0VlCDkaoKGiRcM3LZU6SaNwsiQiBfS8R0XXdbrHUv/ZC3F9HBJEgxwQQR2cxh04IDWz+mO3eIdocRDctLmCEEMYEm40eOeT/8H2aGJMOQFcQBzODNK5xCISQuvXvW9W4bmrtkp6eAadbBdr04Qe6rhJBQNABOr84eIOnZpC23qACjdfVxnf9R7RazG7VlHeBiVZLZO+e2FfHKKWokYLOLw7e4HVdNxhu6OkaonMzhg8fYCdPUtnSDuEAo4RRURL99crePYQQpkMcoGNIxexYXdcFQfj888/vv/9+wdiEC0qpoihXXHHFokWLGGNpFn0wQkj0yCFBjTOrhTCtHY5PCaVUjcWPHua3A08w6LTi4K/ir7/+uqKiwu12a1ryLUoQhEAg0L179/QMOCghSs1JQVNZu7RoSghlhEmERk/VEIwAA51bHBxZll0ul8PhMJJrCIKg67rD4Ui78kbzcl9xJSjoens2akqpEA8qiDhAlxAHL09wDCY+6VfmoIScHrNFKW0vazDG7cQQbICOBuM4zIo4mk3sdDFBaJf+Dkqax4Ux2ek6rRIAII7zFtocaxBXt+6aSNupSTNCCWWqrlu7dSfNxSMAII7zOuSghBBrn2LNYhN0c1cnp4RRXtKgjDGL1VLUF/ccQBydIORglBJGiL1PMe3eg8VjppYh+MxaSgllqqpn5Tgu7k9aLpgOAMRx3sqDEl2XsrKtg4aosWi7dHlQqkWi1n4DLAW9kKcAiKNTxBzkdGkja9zEqGwV2mPkKKUxQjPHTRQEgeo6umMBxHHewzdbYoxljhotXVaihcPEzFSCEipokTApvtgzdgJjjCBPARBHpwk7mK4LVnvezbMUQRTZd8IFg14SKImoas7Ns+SMDMIYwg0AcXSSXIUQQkWR6bp37P91TPx/0aZGKjYPsaOGMhcqivFAk3z1T3Ovm8L49m4AQBydxh7Ne6vQXvMWxgZcpinKt+5I+qCCqIcj4YKiXvMfIrKFUAw2BxBHJ5SHwJgu53QrevTJcE43XVGoeMaGBq2JPlgi1mDRSDDD02vxM9aiPnxNU9xkAHF0RncIAtN1Z78BRc88FyropQaDoii2CBNoa5IeQqggilowEMjK6fXk0swhI5iuYewGgDg6vTs016DL+654XR9+ldLYSDWVihL5Nl44vV1bwhTNO8ExQikRRapr4cbG+IAhfZe+7Bl2BdOwFROAOLqEO0Sma/aeRRf+/aWMe38fdGdFGxtJLEapQAWJCCIRaLM0KKGUCgIVREoFGo/HGxuDdpdrzm+Ly/7HefEApmvfy3cA6DAk3IIU5CyCzdZj5q+z/8/EmjdfD2/4QP/6qBiPyYLAREEQJEYpZURnKlM1TddVUaI9ChzXju859QZ734vI6Q0lxe9UP1AbBRBH51YHFU4vRmLrVVT4m4Xarb/ybfss8p/K8P4qWlcbCwZ1TaWCKDpdJDvHVnyxbcgw7+XD5JxuhO9cTYXTdQ3WovoBAMTR6d1BKKOiyJhOdCJ6snKvHU+uHU8I0ZoaYqGgHlepJFkcTinT+21UoWuE0u8EGvAFgDi6nDt47CGe3lqG/6uY4bFneFp+jm+zRM9QBgAQB3KXb8d9njERjlL0tgKIA5xbIl3hKlvuv5fYl6tZobTzXSz5kcXZElcNcYBWYdbqym1taWbtXyUIQlt/l0Mp5d89y9f5Hl3pvk3fua6UtNil8Jx24Jd8xlcgDvADDa+jsiIxhaM/uKcSskg0ktra2mAwGIlEIpFIPB6nlFosFpvNlpOTk5eX1/LmaJp2XrSlhOy+r1RN0+rq6hRFiUajsVhM13VZlmVZtlqt/KqzsrLOeB74TkP8aBAHOE0sFtu7d6+maQYfC1VVCwoKunXr1pot7Phnampqdu/ebbFYkl4ujFKqaVpJSYnb7T7772qaJooi91QgEPjyyy937tz56aefVldX19bWKooSi8Wi0Sg3iyRJFovF6/Xm5eVlZWWNGDFi2LBhgwYNstvtLY+WhvEF35Yw8af0+XzV1dUHDx7cvXv3N9984/f7GxsbT548GQwG4/F4PB5njImiKDfjcDguuOCCrKysHj16lJSU9O3bt6ioKCMjo6WP2hrfQRydDf70b9y48eabb7bb7UYW+xNF0efzzZo164knntB1/ZyNStM0SZI2btx4++23Z2dnq6qadKwUCoXWr18/dOjQHxNHQhnxePzjjz9+7733tm3bduTIkUgkQgiRJEmSJN7YbDYbPwJjTNO0mpqa6upqXdc/+OADu91eXFw8evTo8ePHDx8+XBRFngKkyUuYN+mEGQ8ePPjvf/+7oqJi+/bttbW1PLjg1yiKIr9eSqksy/xiVVXlEvH5fEePHtU0jUciNputoKBg4MCBI0aMGDt2bK9evRK3NM31AXG0O36/X1VVURSN7H3J49hgMEhaV13jn5EkyWazWSyWpN/elFL+jj1Lhs8b+Ztvvrl8+fLt27drmmZthrSojLYsB3AlCYJgsVgSu5Hv3bt3586dy5YtGzZs2Jw5cyZOnMh/vWMzl4QyCCGNjY3vv//+O++88/nnn9fX1xNCbDabLMtOp9PlcpHvVUZbXmzigFarNWFPXdePHDlSVVW1cuXKvLy8q6666he/+MXo0aNtNlua6wPiaHdEUTTrtdnW9s9aYCQ+/7EWxR/r9evX//Wvf62oqBBF0eVyUUp5kzi7KL/f+2C32x0OB2Pss88+q6ysvPbaa++7776SkpLEb3VIYpIIMV599dW1a9cePnyYUupwODweT0Ir56xAt7zMM+6n1WrlCZqiKKtXr37nnXcuuuiiKVOmzJgxIycnp6OuHeJIi8TYrBXJ02dlc56eRCKRRx55ZPny5YIgZGRkGOzESXzX6XQSQj766KMtW7bMnj174cKFkiSluOrBm6soikeOHFm2bNnq1atPnTrlcDgyMzP5fzUSP57xN+WHEkUxMzOTMXbo0KGHH3741VdfnT179q233irLchqGHhhuBJK0xtGjR6dOnbp06VK32+1yuXjeblaj1XU9IyNDkqQnn3xy6tSphw8fNpjrtfUCBUGIx+NLly6dMGHC8uXLo9Fodna2xWLRNE3TtPYwODeIrus2my07O/vkyZPz588vLS3dtGmTKIo8a4M4wPltjR07dkyaNKmioiIrK8vE1+8ZP0Qpzc7O3rx586RJk3bv3p0CdyTSky+//HLatGkLFiwIBAK8A1VV1dREfLquq6oqy7LX6922bdv111//+OOPRyIRQRBSpk6IA5j8TIuiWFVVNX369JMnT3o8nqT7a1rZjFVV9Xq9NTU1119//c6dO0VRbL8Xb2JoRllZWWlp6ebNm7OzsyVJSpkyvh+AuFwui8WyePHiKVOmHDt2LJVhF8QBzEz76+rqZs6cWV9f73Q629UaCeLxuMvlOnXq1IwZM44ePSoIQnu4g3ffxGKx3/72t/PmzYvH4xkZGR2ijDPCLsZYTk5OZWXlpEmTPvnkkzRxB8QB2vYcz507t6qqyu12p8YaHFVVXS7XiRMn7rrrLj48xNz2zAeMhMPhW2+9taysjOcm6ZMXqKqamZn5zTff3HDDDe+99146uAPiAK1FkqSlS5euWbPG6/Wm0hotG8+mTZsWLVpkbtDBY41AIHDLLbesXbs2JyenncqfBi/f4XDouj5z5szVq1d3uDsgDtCqpsUY27t379NPP52ZmdlRjyyvdyxbtox3NJjiDl7XiMVis2bNWr9+vZFRtikI9yRJkmX5zjvvXL9+fce6A+IArW1dzz77bH19vSzLHfg25mMZHnzwQUVR+Egzg9fFw41777133bp16WyNhMH5ePY77riDdzN1VB8txAHO/bDa7fbjx4+vXbuW1ws79mScTueuXbvKy8uND23gnUTPPPPMSy+9lJOTk+bWSJyzxWJpamqaM2dOXV0d6aBhgRAHOPeTmpmZuXLlSp/Plw4zVrnIVqxYEQwG+TQZI9bYtGnT4sWLvV5v+pRCW5OzuN3uL774YsGCBbzck3p3QBzgHFit1vnz57/88ssZGRnpMHiRi2Pv3r3vvvsuSXaRJJ6h1NXVzZs3j/+zuW2PT8zjg9b5ZCVzp+qpqpqVlbV69eq33367QxIWiAOcowogy/KGDRtqa2s7trpxxlmJorhy5UojE8Aopb///e8PHjzodDpNXKKNa0LTtFgsFgqFGhsbm5qaQqEQX9SHe8QUgzDGLBbL448/7vf7BUFI8Z8Gk9zAuR9Ql8tl4lQ9U4IOh8OxdevWHTt2DBkypK364KPm//nPf5aXl5s1+JXHF1wWoih6PJ7s7OysrKzc3FzGWG1tbX19fX19fWNjI59cy6ftGb8JBw4cWLRo0eLFi3ncBHGA9CpznC1qFQQe6rdcfZM0L0LRThm4KIqNjY2bNm0aMmRIm47Px3pFo9G//OUvZpVsRFGMxWLBYDA/P7+0tHTChAmXXXZZZmYmFwQhJB6PK4ri8/kqKiree++9ysrKhoaGjIwMg/VdVVUzMjJeeeWVadOmlZSUpHICMcQBDDUYTdMURVFVVZKkxAJZfJ5FPB4nhNjtdr52obl5OM+hNm3aNHfu3DaFGzxfWLVq1datW43XRHmg0dTUlJeXN2fOnBkzZiRW8UqcJyFElmWPx+PxePr06XPjjTdWVVWVlZW99tpr/P4YOQdRFIPB4JIlS1544YVULtsBcYBk4MX8hoYGl8t1+eWXDxs2rKSkxOv1Op1OHrEHg8FDhw5t2bJl+/btX3/9NV+uxsSeC8aY1Wrdv3//8ePHe/To0cpshYcbsVjsxRdfNLIUa8IahBCfz1daWvroo48WFhaS7y7anvhMyzXQBEHo16/fE0888bOf/WzBggUHDx400snNe1jWr1+/devWoUOHpizogDhAMm+5cDgsiuL06dNnzpw5aNCgH2y0Y8aMmTlz5okTJz766KO//e1vBw4c8Hg8Jq5/I8tybW1tVVVVjx49WqkAHm6sW7dux44dbrfbSBDEs7NwOLxgwYL77ruPUqqqast1jL+vmJYrvzPGrrnmmjfffPOWW27hJ5P0nREEQVGU1157bejQoSkrc6BXBbTxVSNJjY2NvXv3Li8vX7JkyeDBg3knAkdvJrHgTX5+/owZM9asWTNlypSGhgYTw2lKaTweP3ToUFsDpZdeesl45yilNBwOP/bYY/Pnz+eJGB/T2crTEEVRVdX8/PxXXnmluLiYj0lJugLldDo3btxYV1eXsu4ViAO0LdZobGwcMmTIqlWrRo0alVj1S2xGaCbR78jrHXl5eStWrJg3b15TU5OJ7hAEYceOHaR1O9fwfoddu3ZVVlY6nU6DlYWGhoa777571qxZqqomtyUK71jp3r37888/7/V6Y7FYci7j/bLV1dUfffQRMW/3L4gDmGYNRVEGDBjw+uuv5+fn86Xbz9lg+NAGHoY88MAD06dPb2hoMCUP56M5Tpw4kUgczvl5Qsi7776rKIqRExAEIRAIXH311fPnz+c1haSDFx53XHLJJQsXLgyFQkaUSin98MMPW7PnDsQBUgfP4e12+9///vfc3Fw+U7NNjY2/DB977LH+/fuHQiFTnm/ehnn3TWssE4lENmzYYLfbDS6q7HA4Hn30UVmWjac83KrTp08vKSlRFCU5d/DRtBUVFbW1tanJViAO0IYmOnv27EsuuYTHGkkcgTGWmZk5b948Ht4bjzh4XZAv7dOacGPr1q0HDx60Wq1Ji0MUxUAgMHny5AEDBhjfnS8RK1kslltuuSXp28JLxadOndq2bVtqshWIA7Tq4Y5Go4WFhbNmzTKyuxp3x/jx43nQYbzVcZ2dOnWKnGuSKG9Ln376qcHf5auQT58+3cSkgJ/PhAkTCgsLI5FIcoflq4p89tlnJCXzZSEO0KonOxQK/fznP8/JyTEiDj5Q0m63jx8/Pula4BnZRzAY9Pv9rYkUGGOVlZVGZtwIghCJRIqLiwcNGmTipDV+W7KysgYMGMC3kkzubkiStGfPnsS+cxAH6GB4JDxu3DizZqxcc801FovFeETNKy+hUOjsr1keHfj9/n379lmtViNbcEcikZEjR1qtVr57g4l3mDFWUlKS9EgwPiJu3759DQ0Npk/2hThAkjFwfn5+cXFxcv2O3w/Li4qK8vLyTKl0tGZXF26oqqoqn8/XppruD55/7969eScRMw9+tJ49exq5vbyznHczQRwgLQocffv25RM9jY+bIoR069atsLDQeLbSJvbt22dw7R9+/jk5OYIgJLpUTEGWZUEQcnNzkw7EeIaiKEpVVVUKxIEh56BVGXheXl4i5jceIwiCwBc9TqU4jh07ZrCrkldGlyxZsm7dOtNTFVEUv/nmGyMlGD6U9siRIym4mRAHaNVj7fV6zX2P8U2qU3P+PP4/dOiQwXCD13q+/PLLnTt3tktrlCSbzWbQ8vX19RAHSKO4w0QNEUJcLlfKrMezra+++spggYMfzW63OxyOdjpVgwVjQRAaGxvN/XtBHKBzmqg1KIrCR3AYD3PSatf479/VYDCYiiAOTzDo9HkWISQSifAN3zv3lUqSVFNTw6+0XTNBiAN0CaLRaDQaTXGYk3pxCILg9/vD4TAiDgDMEUeKO3E6KlWJx+Mp2FkK4gBdAnO3NUnny9Q0DeIAwBwSaw51enGoqsqH0qLGAYBRzNoG6bwAs2MBMAer1SpJUvrsKXW+A3GALoEkSRCHmfcTtwB0+rSfi8PgePOWB0zPrIfPpk/NWBWIA3QJZFm2WCymHCoej6dnzy7vUuFbQEAcAJgjDkmSjLcoPlHY7XabspiI6eKIx+NFRUWZmZmknQf1QxygS2Cz2ZxOJ5/wZmTpQEVRFi5ceN1118VisZTt8Nx6+DpgfC4fxAGAofewrusWi6W4uHjnzp1GJrZy6ei6brVaLRZL1+nfhThAV4SHGBdeeKHxIZWMMb/fz7enS8OIIyE4iAMAc7jggguMtyhN03w+3xmbSHdBMI4DdBV69+7tcrkM1kclSeLbXKdtuAFxAGDSUy4IhJC+ffsa7A3h1Y0vvviCb2HZlYeTQRygS8AYy83N7dOnj8Gl1S0Wy/Hjx3fv3m3WFjMQBwBpCu9YEUVx9OjRRsSR2K32gw8+aI+Ig+8RY5DUTAKGOEAXYsSIEaZsVf/OO+/4/X5zl+fjVhINgyHnAJhc5hg8eHDPnj2rq6stFktybZ4xZrPZDh8+/Nxzz91///1mdcrykWmff/75v/71r6TPjW9tW1JSMmbMGBP3xIY4QFfPVjIyMoYOHXrw4EGbzXbOjSPPEnS43e7ly5eXlpb279/fuDt4BKQoypw5c/bs2ZN0TCRJks/n+93vfjdmzBiemkEcP/AQ6LresR3pxjdSBamEv8Z/+tOfvvHGGwaPI0mSoii/+c1vVq9ezbt4k34S+FBUSZKeeOKJQ4cO5efnJ200SqnVah03bhzBvio/eHf46u9otCCJbGXcuHEDBw7ct2+fzWZLukKhaZrT6dy6devdd9+9YsUKURSTizsS1li5cuWSJUvcbncsFku6XcRisR49evTv3x/i+IGgzm63b9++/fbbb+fRZocEHYIghEKhsWPH3nTTTUbeNiDFrxxN0+x2+7Rp0x588EGHw5H0u527w+v1vv3227IsP/vss1arlT+NrXwY+KB1vkrI888//9BDD9ntdoPPZDgcHjlypNvtTsEzeV5GHNFo9K233urAVEUURb/fTym96aab0CDPr4eHMTZlypRly5b5/X6Da4JpmubxeMrLy2trax9++OFLL700EUT82GI/fPQH9wsvSTz++OMvvviiy+Uy2L/L97WdOHEiScmao+drjcPj8XTgCfCVb/mqB+D8ylY0TevevfvkyZOffvrpnJwcg9PeeNyxZcuW6667burUqTNmzBg0aNBZcpaETWpqat59992ysrL9+/d7PB5d1420dt6fctFFF1155ZWJpAzi+OE/WIefQIefA0g66LjtttveeOONcDhsfD1BTdNcLpemaWVlZatWrRo2bNjVV189YsSIwsJCt9styzJjTFXVWCwWiURqa2v37NnzySefbNq06dixY1ar1ePxGH+QeOFvxowZTqczNdN20R0LumLQUVhYeNttt/3pT38yHnQQQnhNwev1apq2cePGDRs2OJ3OjIyMbt26OZ1OXdcjkYiiKIFAIBgMKoqiaZrD4fB4PLzSYfyKIpFI3759r7/+eqw5CkA7ukPX9V/96ldr167dv3+/w+EwPkw7oQC3282rsI2NjfX19fzIlFI+plMURf4BPrrcrBgqHA7fcccdmZmZKVslBN0BoCtmK4QQj8ezaNEinqqYWGVPGEGSJLvd7nQ6nU6nw+GwWCx8RT/+AbPql6IoBgKB0aNH33zzze096AviAAg6BE3Trrjiinnz5vn9/vZob7x7JUF7zKblGz7a7fY//vGP3Eqpu4F4hkBXdsc999xTWlrq8/lS3PBMDDceeOCBSy+9lG+MAHEA0O4JC6VUkqSnnnqqX79+wWDw/HKHJEl1dXU33HDD7NmzU78AKsQBunTQoet6bm5uWVlZVlaWoijniztkWfb5fFdeeeWf//znlPWkQBwAfCdh6dev34svvuj1es+LuIMPOb3sssvKysoSm8VAHACkulKgadqIESPKy8t79erFh6KnbXrFMxR+tt27d++oqVIQBwCn3TFw4MC33npr7Nix9fX1abhmAu859vv906ZNe+ONN3JzcztwgiXEAcC37igoKHj99dfvvvvucDgcjUbTJPTg48eCwWA0Gv3DH/6wYsWKzMzMjp2WDXEA8K07dF2XZfmRRx554YUXcnNzfT4f6dAtVHhuoqqq3+8fPHhweXn5Pffcw0eFdGxABHEA0KI9CAIfuDVx4sR169b98pe/1DStoaGBv/NTWYPk49NVVfX5fG63+6GHHnr77bdHjx7Nx2t0+CZyEAcAZ77keTdtfn7+U0899dZbb02ePJm/8/lwiXZ91SdmtYTDYa6MuXPnfvjhh/fccw9fizRNdpCTUvn34Mu3d4IdN0VRlCSplQ9Q4sIN/mISj2wH/nQr36gGz639AgEeejDGhg4dOnTo0MrKyn/84x8bN26sra2VZdlut/Mz5+GJKariR4tEIpFIxGq1XnzxxRMmTJg2bVpRUREhhAca6VOvTZ044vG43++Px+Op2TCmvcXh9/uDwWDrL9zgBGpJkvx+fzgcJm1Z3ykajfKVyoz8NL/YUChk7j0MhUJ+v58YW1qFTwyNx+Pt9Krj01gJIcOHDx8+fPixY8fWrFmzbt26Xbt2NTU18cWBLRZLInfgf5rEH6jlX+qMfaoTn2eMxWKxaDTK95fs3bv3qFGjSktLR44cabVaE8pIt61qUyEOfo8uueSS6dOnd8hglfZ4HQUCgVGjRrXmwktKSm688UbSvIRM0r8YDAZ/8pOfkLasQ1tQUDB58mS+CKWRi1UUZeTIkcSkJXD5QUaNGlVTU8OXq0j6OLzh9ezZk7Tb8rz8Jc9PsrCw8M477/z1r3+9Y8eOzZs3b9u2bf/+/dXV1Yqi8EU9eFCQCEgTp5SY8KaqKi9t8n+VJMliseTn5xcXFw8cOPDKK68cNGhQYmU5vohpeu5u3aU3zgWgTfA237IlNzU1VVdXf/XVV7t27Tp69KjP5wsEAn6/v76+PhqNqqrKZ9BbLBZZlp1OZ3Z2tsvlslqtDoejqKho8ODBvXv37tmzZ3Z29hm/kg4V0LQQR2IR106jqlaOETLxwts6KsmUn+ZfN31AlMFVNs8IClLZxlgzP3ZPGhoafD5fKBSKRqPxeJwx5nA4bDaby+XKysr6wdXME3cjzX2BiAMAMyWSqIm0ptnzzycWB2vltyAOADq/TVo6omVltBPU+CAOAEBS6SFuAQAA4gAAQBwAAIgDAABxAAAgDgAAgDgAABAHAADiAABAHAAAiAMAACAOAADEAQCAOAAAEAcAAOIAAACIAwAAcQAAIA4AAMQBAIA4AAAQBwAAQBwAAIgDAABxAAAgDgAAxAEAABAHAADiAABAHAAAiAMAAHEAAADEAQAwg/8Fceyjk+Tk/ecAAAAASUVORK5CYII="};
 
@@ -975,52 +999,63 @@ function renderQuote(){
 
   return '<div class="quote-wrap">'
 
+    // ① 받는 분 + 영업 담당자
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">🧾 견적서</span><span style="font-size:11px;color:#888">'+dateStr+'</span></div>'
-      +'<div class="qinner">'
-
-        +'<div class="qinner-left">'
-          +'<div class="qmeta">'
-            +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" oninput="refreshQ()"></div>'
-            +'<div class="qmeta-field"><label class="qmeta-label">담당자</label><input class="qmeta-input" id="qm-name" placeholder="홍길동" oninput="refreshQ()"></div>'
-            +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" placeholder="010-0000-0000" oninput="refreshQ()"></div>'
-          +'</div>'
-          +'<div class="qmode">'
-            +'<button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button>'
-            +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
-          +'</div>'
-          +'<div class="qitems" id="qi-panel">'+qc.items+'</div>'
+      +'<div style="padding:0 20px 18px">'
+        +'<div class="qmode" style="padding:0 0 14px;border-bottom:none">'
+          +'<button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button>'
+          +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
         +'</div>'
-
-        +'<div class="qinner-right">'
-          +'<div id="q-total-area" style="flex:1">'+(qc.hasItems?'<div class="qtotal">'+qc.total+'</div>':"")+'</div>'
-          +'<div class="qsales">'
-            +'<label class="qsales-label">👤 영업 담당자</label>'
-            +'<div class="qsales-grid">'
-              +'<input class="qsales-input" id="qs-dept" placeholder="소속" value="'+esc(QSALES.dept)+'" oninput="setQSales(&apos;dept&apos;,this.value)">'
-              +'<input class="qsales-input" id="qs-rank" placeholder="직급" value="'+esc(QSALES.rank)+'" oninput="setQSales(&apos;rank&apos;,this.value)">'
-              +'<input class="qsales-input" id="qs-name" placeholder="이름" value="'+esc(QSALES.name)+'" oninput="setQSales(&apos;name&apos;,this.value)">'
-              +'<input class="qsales-input" id="qs-tel" placeholder="연락처" value="'+esc(QSALES.tel)+'" oninput="setQSales(&apos;tel&apos;,this.value)">'
-            +'</div>'
-          +'</div>'
-          +'<div class="qspecial">'
-            +'<label class="qspecial-label">📋 특약사항</label>'
-            +'<textarea class="qspecial-input" id="qm-special" placeholder="특약사항을 입력하세요 (예: 무상 A/S 1년, 설치비 별도 등)" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
-          +'</div>'
-          +'<div class="qactions">'
-            +'<button class="qbtn-p" onclick="printQuote()">🖨️ 견적서 발행 (인쇄/PDF)</button>'
-            +'<div style="display:flex;gap:6px">'
-              +'<label class="qbtn-logo">'+(COMPANY.logo?"✓ 로고 변경":"🏢 로고 등록")+'<input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>'
-              +'<button class="qbtn-r" onclick="resetQ()" style="flex:1">↺ 초기화</button>'
-            +'</div>'
-          +'</div>'
+        +'<div class="qsec-label">📩 받는 분</div>'
+        +'<div class="qmeta" style="padding:0 0 14px;border-bottom:1px solid #F2F4F6">'
+          +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" value="'+esc(QCLIENT.co)+'" oninput="setQClient(&apos;co&apos;,this.value)"></div>'
+          +'<div class="qmeta-field"><label class="qmeta-label">담당자</label><input class="qmeta-input" id="qm-name" placeholder="홍길동" value="'+esc(QCLIENT.name)+'" oninput="setQClient(&apos;name&apos;,this.value)"></div>'
+          +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" placeholder="010-0000-0000" value="'+esc(QCLIENT.tel)+'" oninput="setQClient(&apos;tel&apos;,this.value)"></div>'
+        +'</div>'
+        +'<div class="qsec-label" style="margin-top:16px">👤 영업 담당자</div>'
+        +'<div class="qsales-grid">'
+          +'<input class="qsales-input" id="qs-dept" placeholder="소속" value="'+esc(QSALES.dept)+'" oninput="setQSales(&apos;dept&apos;,this.value)">'
+          +'<input class="qsales-input" id="qs-rank" placeholder="직급" value="'+esc(QSALES.rank)+'" oninput="setQSales(&apos;rank&apos;,this.value)">'
+          +'<input class="qsales-input" id="qs-name" placeholder="이름" value="'+esc(QSALES.name)+'" oninput="setQSales(&apos;name&apos;,this.value)">'
+          +'<input class="qsales-input" id="qs-tel" placeholder="연락처" value="'+esc(QSALES.tel)+'" oninput="setQSales(&apos;tel&apos;,this.value)">'
         +'</div>'
       +'</div>'
     +'</div>'
 
+    // ② 장비 선택
     +'<div class="qbox">'
-      +'<div class="qbox-head"><span class="qbox-title">📦 장비 선택</span><span style="font-size:11px;color:#888">수량 입력 → 위 견적서에 자동 반영</span></div>'
+      +'<div class="qbox-head"><span class="qbox-title">📦 장비 선택</span><span style="font-size:11px;color:#888">수량 입력 → 견적 자동 반영</span></div>'
       +prodRows
+    +'</div>'
+
+    // ③ 견적 내역 + 합계
+    +'<div class="qbox">'
+      +'<div class="qbox-head"><span class="qbox-title">📋 견적 내역</span></div>'
+      +'<div style="padding:0 20px 18px">'
+        +'<div class="qitems" id="qi-panel" style="border-bottom:none;padding:0">'+qc.items+'</div>'
+        +'<div id="q-total-area">'+(qc.hasItems?'<div class="qtotal" style="border-bottom:none;background:#F9FAFB;border-radius:12px;margin-top:10px">'+qc.total+'</div>':"")+'</div>'
+      +'</div>'
+    +'</div>'
+
+    // ④ 특약사항
+    +'<div class="qbox">'
+      +'<div class="qbox-head"><span class="qbox-title">📋 특약사항</span></div>'
+      +'<div style="padding:0 20px 18px">'
+        +'<textarea class="qspecial-input" id="qm-special" placeholder="특약사항을 입력하세요 (예: 무상 A/S 1년, 설치비 별도 등)" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
+      +'</div>'
+    +'</div>'
+
+    // ⑤ 견적서 발행
+    +'<div class="qbox">'
+      +'<div style="padding:18px 20px">'
+        +'<button class="qbtn-p" onclick="shareQuote()">🔗 견적서 링크 공유</button>'
+        +'<button class="qbtn-p2" onclick="printQuote()" style="margin-top:8px">🖨️ 인쇄 / PDF 저장</button>'
+        +'<div style="display:flex;gap:6px;margin-top:8px">'
+          +'<label class="qbtn-logo">'+(COMPANY.logo?"✓ 로고 변경":"🏢 로고 등록")+'<input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>'
+          +'<button class="qbtn-r" onclick="resetQ()" style="flex:1">↺ 초기화</button>'
+        +'</div>'
+      +'</div>'
     +'</div>'
 
   +'</div>';
@@ -1157,8 +1192,9 @@ window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.setQSpecial=function(v){QSPECIAL=v;};
 window.setQSales=function(f,v){QSALES[f]=v;};
+window.setQClient=function(f,v){QCLIENT[f]=v;};
 window.resetQ=function(){
-  ADJUST=[];QSPECIAL="";QSALES={dept:"",rank:"",name:"",tel:""};ADJFORM={label:"",amount:"",sign:-1};
+  ADJUST=[];QSPECIAL="";QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};ADJFORM={label:"",amount:"",sign:-1};
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
@@ -1178,132 +1214,200 @@ window.uploadLogo=function(input){
   reader.readAsDataURL(file);
 };
 
-// 토스 스타일 견적서 인쇄
-window.printQuote=function(){
+// ── 견적 데이터 수집 (현재 입력값 → 객체) ──
+function collectQuoteData(){
   var co=document.getElementById("qm-co"),nm=document.getElementById("qm-name"),tel=document.getElementById("qm-tel");
-  var clientCo=(co?co.value:"")||"고객사";
-  var clientNm=nm?nm.value:"";
-  var clientTel=tel?tel.value:"";
   var sDept=document.getElementById("qs-dept"),sRank=document.getElementById("qs-rank"),sName=document.getElementById("qs-name"),sTel=document.getElementById("qs-tel");
-  var salesDept=sDept?sDept.value:"",salesRank=sRank?sRank.value:"",salesName=sName?sName.value:"",salesTel=sTel?sTel.value:"";
-  var hasSales=salesDept||salesRank||salesName||salesTel;
-
   var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
-  if(!sel.length&&!ADJUST.length){alert("견적할 상품을 선택해주세요.");return;}
+  var items=sel.map(function(p){return{name:p.name,spec:(p.spec||""),img:p.img||"",sell:p.sell,monthly:p.monthly,qty:QTY[p.id]};});
+  return{
+    mode:QMODE,
+    clientCo:((co?co.value:"")||QCLIENT.co)||"고객사",
+    clientNm:(nm?nm.value:"")||QCLIENT.name,
+    clientTel:(tel?tel.value:"")||QCLIENT.tel,
+    salesDept:(sDept?sDept.value:"")||QSALES.dept,salesRank:(sRank?sRank.value:"")||QSALES.rank,salesName:(sName?sName.value:"")||QSALES.name,salesTel:(sTel?sTel.value:"")||QSALES.tel,
+    items:items,
+    adjust:ADJUST.map(function(a){return{label:a.label,amount:Number(a.amount)||0};}),
+    special:QSPECIAL,
+    company:Object.assign({},COMPANY),
+    date:new Date().toISOString().slice(0,10)
+  };
+}
 
+// ── 견적 데이터 → 견적서 HTML 문서 ──
+function buildQuoteHtml(d,opts){
+  opts=opts||{};
+  var QM=d.mode;
   var supply=0,monthly=0,adjustVat=0;
   var itemsHtml="";
-  sel.forEach(function(p){
-    var q=QTY[p.id];
-    var price=QMODE==="sell"?p.sell:p.monthly;
-    var amt=price*q;
-    supply+=QMODE==="sell"?p.sell*q:0;
+  (d.items||[]).forEach(function(p){
+    var q=p.qty;
+    var unit=QM==="sell"?p.sell:p.monthly;
+    var amt=unit*q;
+    supply+=QM==="sell"?p.sell*q:0;
     monthly+=p.monthly*q;
-    var unit=QMODE==="sell"?p.sell:p.monthly;
-    var amtLabel=QMODE==="monthly"&&p.monthly===0?"무상":fmtN(amt)+"원"+(QMODE==="monthly"?"/월":"");
-    var imgHtml=p.img?'<img src="'+p.img+'" style="width:44px;height:44px;object-fit:contain;background:#F2F4F6;border-radius:10px;padding:3px">':'<div style="width:44px;height:44px;background:#F2F4F6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>';
+    var amtLabel=QM==="monthly"&&p.monthly===0?"무상":fmtN(amt)+"원"+(QM==="monthly"?"/월":"");
+    var imgHtml=p.img?'<img src="'+p.img+'" style="width:42px;height:42px;object-fit:contain;background:#F2F4F6;border-radius:10px;padding:3px">':'<div style="width:42px;height:42px;background:#F2F4F6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px">📦</div>';
     itemsHtml+='<tr>'
-      +'<td style="padding:12px 0;border-bottom:1px solid #F2F4F6"><div style="display:flex;align-items:center;gap:12px">'+imgHtml+'<div><div style="font-size:14px;font-weight:600;color:#191F28">'+esc(p.name)+'</div><div style="font-size:11px;color:#8B95A1">'+esc(p.spec||"").split("\n")[0]+'</div></div></div></td>'
-      +'<td style="padding:12px 0;border-bottom:1px solid #F2F4F6;text-align:center;font-size:13px;color:#4E5968">'+q+'</td>'
-      +'<td style="padding:12px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:13px;color:#4E5968">'+fmtN(unit)+'원</td>'
-      +'<td style="padding:12px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:14px;font-weight:600;color:#191F28">'+amtLabel+'</td>'
+      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6"><div style="display:flex;align-items:center;gap:10px">'+imgHtml+'<div><div style="font-size:13px;font-weight:600;color:#191F28">'+esc(p.name)+'</div><div style="font-size:10px;color:#8B95A1">'+esc((p.spec||"").split("\n")[0])+'</div></div></div></td>'
+      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:center;font-size:12px;color:#4E5968">'+q+'</td>'
+      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:12px;color:#4E5968">'+fmtN(unit)+'원</td>'
+      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:13px;font-weight:600;color:#191F28">'+amtLabel+'</td>'
       +'</tr>';
   });
-  ADJUST.forEach(function(a){
+  (d.adjust||[]).forEach(function(a){
     var amt=Number(a.amount)||0;
     adjustVat+=amt;
     var color=amt<0?"#F04452":"#3182F6";
     itemsHtml+='<tr>'
-      +'<td style="padding:12px 0;border-bottom:1px solid #F2F4F6"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;background:'+(amt<0?"#FFF0F0":"#EBF2FE")+';border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">'+(amt<0?"🏷️":"➕")+'</div><div style="font-size:14px;font-weight:600;color:#191F28">'+esc(a.label)+'</div></div></td>'
+      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6"><div style="display:flex;align-items:center;gap:10px"><div style="width:42px;height:42px;background:'+(amt<0?"#FFF0F0":"#EBF2FE")+';border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px">'+(amt<0?"🏷️":"➕")+'</div><div style="font-size:13px;font-weight:600;color:#191F28">'+esc(a.label)+'</div></div></td>'
       +'<td style="border-bottom:1px solid #F2F4F6"></td><td style="border-bottom:1px solid #F2F4F6"></td>'
-      +'<td style="padding:12px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:14px;font-weight:600;color:'+color+'">'+(amt>=0?"+":"")+fmtN(amt)+'원</td>'
+      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:13px;font-weight:600;color:'+color+'">'+(amt>=0?"+":"")+fmtN(amt)+'원</td>'
       +'</tr>';
   });
 
-  var base=QMODE==="sell"?supply:monthly;
+  var base=QM==="sell"?supply:monthly;
   var vat=Math.round(base*0.1);
   var total=base+vat+adjustVat;
-  var perMonth=QMODE==="monthly"?"/월":"";
-  var today=new Date();
-  var dateStr=today.getFullYear()+". "+String(today.getMonth()+1).padStart(2,"0")+". "+String(today.getDate()).padStart(2,"0");
+  var perMonth=QM==="monthly"?"/월":"";
+  var CO=d.company||COMPANY;
+  var dd=d.date?new Date(d.date):new Date();
+  var dateStr=dd.getFullYear()+". "+String(dd.getMonth()+1).padStart(2,"0")+". "+String(dd.getDate()).padStart(2,"0");
+  var hasSales=d.salesDept||d.salesRank||d.salesName||d.salesTel;
 
-  var logoHtml=COMPANY.logo?'<img src="'+COMPANY.logo+'" style="width:44px;height:44px;object-fit:contain;border-radius:12px">':'<div style="width:44px;height:44px;background:#F2F4F6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8B95A1">로고</div>';
+  var logoHtml=CO.logo?'<img src="'+CO.logo+'" style="width:42px;height:42px;object-fit:contain;border-radius:12px">':'<div style="width:42px;height:42px;background:#F2F4F6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8B95A1">로고</div>';
+  var specialHtml=(d.special||"").trim()?'<div class="card" style="padding:18px 22px;margin-bottom:10px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:8px">특약사항</div><div style="font-size:12px;color:#4E5968;line-height:1.7">'+esc(d.special).split("\n").join("<br>")+'</div></div>':"";
 
-  var specialHtml=QSPECIAL.trim()?'<div style="background:#fff;border-radius:20px;padding:20px 24px;margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:10px">특약사항</div><div style="font-size:13px;color:#4E5968;line-height:1.8">'+esc(QSPECIAL).split("\n").join("<br>")+'</div></div>':"";
+  var shareBtns=opts.showShareBtns?'<div class="noprint" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:99"><button onclick="window.print()" style="background:#3182F6;color:#fff;border:none;padding:13px 22px;font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;box-shadow:0 4px 16px rgba(49,130,246,.35)">🖨️ PDF 저장</button></div>':"";
 
-  var html='<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>견적서_'+esc(clientCo)+'</title>'
-    +'<style>'
-    +'@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");'
-    +'*{margin:0;padding:0;box-sizing:border-box;font-family:\'Pretendard Variable\',Pretendard,sans-serif}'
-    +'body{background:#F2F4F6;padding:24px;color:#191F28}'
-    +'.wrap{max-width:580px;margin:0 auto}'
-    +'.card{background:#fff;border-radius:20px;margin-bottom:12px}'
-    +'@media print{body{background:#fff;padding:0}.card{border:1px solid #F2F4F6;break-inside:avoid}.noprint{display:none}}'
-    +'.pbtn{position:fixed;bottom:24px;right:24px;background:#3182F6;color:#fff;border:none;padding:14px 24px;font-size:15px;font-weight:600;border-radius:14px;cursor:pointer;box-shadow:0 4px 16px rgba(49,130,246,.35)}'
-    +'</style></head><body><div class="wrap">'
-    // 헤더 카드
-    +'<div class="card" style="padding:28px 24px">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'
-        +'<div style="display:flex;align-items:center;gap:10px">'+logoHtml+'<div><div style="font-size:16px;font-weight:700;color:#191F28">'+esc(COMPANY.name)+'</div><div style="font-size:11px;color:#8B95A1">'+esc(COMPANY.slogan)+'</div></div></div>'
-        +'<div style="font-size:12px;color:#8B95A1">'+dateStr+'</div>'
+  var body='<div class="wrap">'
+    +'<div class="card" style="padding:24px 22px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
+        +'<div style="display:flex;align-items:center;gap:10px">'+logoHtml+'<div><div style="font-size:15px;font-weight:700;color:#191F28">'+esc(CO.name)+'</div><div style="font-size:10px;color:#8B95A1">'+esc(CO.slogan||"")+'</div></div></div>'
+        +'<div style="font-size:11px;color:#8B95A1">'+dateStr+'</div>'
       +'</div>'
-      +'<div style="font-size:13px;color:#8B95A1;margin-bottom:4px">'+esc(clientCo)+'님께 드리는</div>'
-      +'<div style="font-size:24px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px">'+(QMODE==="sell"?"견적 금액이에요":"월 관리비 견적이에요")+'</div>'
-      +'<div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:36px;font-weight:700;color:#3182F6;letter-spacing:-1.5px">'+fmtN(total)+'</span><span style="font-size:20px;font-weight:700;color:#3182F6">원'+perMonth+'</span></div>'
-      +'<div style="font-size:12px;color:#8B95A1;margin-top:4px">VAT 포함 · 견적 유효기간 30일</div>'
+      +'<div style="font-size:12px;color:#8B95A1;margin-bottom:4px">'+esc(d.clientCo)+'님께 드리는</div>'
+      +'<div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px">'+(QM==="sell"?"견적 금액이에요":"월 관리비 견적이에요")+'</div>'
+      +'<div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:32px;font-weight:700;color:#3182F6;letter-spacing:-1.5px">'+fmtN(total)+'</span><span style="font-size:18px;font-weight:700;color:#3182F6">원'+perMonth+'</span></div>'
+      +'<div style="font-size:11px;color:#8B95A1;margin-top:4px">VAT 포함 · 견적 유효기간 30일</div>'
     +'</div>'
-    // 수신 정보 + 영업 담당자 (좌우 2단)
-    +'<div class="card" style="padding:20px 24px"><div style="display:flex;gap:20px">'
+    +'<div class="card" style="padding:18px 22px"><div style="display:flex;gap:16px">'
       +'<div style="flex:1">'
-        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><div style="width:26px;height:26px;background:#EBF2FE;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">📩</div><span style="font-size:13px;font-weight:600">받는 분</span></div>'
-        +'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">상호</span><span style="color:#4E5968;font-weight:500;text-align:right">'+esc(clientCo)+'</span></div>'
-        +(clientNm?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">담당자</span><span style="color:#4E5968;text-align:right">'+esc(clientNm)+'</span></div>':"")
-        +(clientTel?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">연락처</span><span style="color:#4E5968;text-align:right">'+esc(clientTel)+'</span></div>':"")
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><div style="width:24px;height:24px;background:#EBF2FE;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px">📩</div><span style="font-size:12px;font-weight:600">받는 분</span></div>'
+        +'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">상호</span><span style="color:#4E5968;font-weight:500;text-align:right">'+esc(d.clientCo)+'</span></div>'
+        +(d.clientNm?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">담당자</span><span style="color:#4E5968;text-align:right">'+esc(d.clientNm)+'</span></div>':"")
+        +(d.clientTel?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">연락처</span><span style="color:#4E5968;text-align:right">'+esc(d.clientTel)+'</span></div>':"")
       +'</div>'
       +(hasSales?'<div style="width:1px;background:#F2F4F6"></div>'
       +'<div style="flex:1">'
-        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><div style="width:26px;height:26px;background:#E1F5EE;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">👤</div><span style="font-size:13px;font-weight:600">영업 담당자</span></div>'
-        +((salesName||salesRank)?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">담당</span><span style="color:#4E5968;font-weight:500;text-align:right">'+esc(salesName)+(salesRank?" "+esc(salesRank):"")+'</span></div>':"")
-        +(salesDept?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">소속</span><span style="color:#4E5968;text-align:right">'+esc(salesDept)+'</span></div>':"")
-        +(salesTel?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">연락처</span><span style="color:#4E5968;text-align:right">'+esc(salesTel)+'</span></div>':"")
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><div style="width:24px;height:24px;background:#E1F5EE;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px">👤</div><span style="font-size:12px;font-weight:600">영업 담당자</span></div>'
+        +((d.salesName||d.salesRank)?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">담당</span><span style="color:#4E5968;font-weight:500;text-align:right">'+esc(d.salesName)+(d.salesRank?" "+esc(d.salesRank):"")+'</span></div>':"")
+        +(d.salesDept?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">소속</span><span style="color:#4E5968;text-align:right">'+esc(d.salesDept)+'</span></div>':"")
+        +(d.salesTel?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">연락처</span><span style="color:#4E5968;text-align:right">'+esc(d.salesTel)+'</span></div>':"")
       +'</div>':"")
     +'</div></div>'
-    // 상품 카드
-    +'<div class="card" style="padding:20px 24px">'
-      +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">견적 상품</div>'
-      +'<table style="width:100%;border-collapse:collapse"><thead><tr style="font-size:11px;color:#8B95A1"><th style="text-align:left;padding:6px 0;font-weight:500">품목</th><th style="text-align:center;padding:6px 0;font-weight:500;width:36px">수량</th><th style="text-align:right;padding:6px 0;font-weight:500;width:80px">단가</th><th style="text-align:right;padding:6px 0;font-weight:500;width:90px">금액</th></tr></thead><tbody>'+itemsHtml+'</tbody></table>'
+    +'<div class="card" style="padding:18px 22px">'
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:6px">견적 상품</div>'
+      +'<table style="width:100%;border-collapse:collapse"><thead><tr style="font-size:10px;color:#8B95A1"><th style="text-align:left;padding:5px 0;font-weight:500">품목</th><th style="text-align:center;padding:5px 0;font-weight:500;width:34px">수량</th><th style="text-align:right;padding:5px 0;font-weight:500;width:78px">단가</th><th style="text-align:right;padding:5px 0;font-weight:500;width:88px">금액</th></tr></thead><tbody>'+itemsHtml+'</tbody></table>'
     +'</div>'
-    // 합계 카드
-    +'<div class="card" style="padding:20px 24px">'
-      +'<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:#8B95A1">공급가액</span><span style="color:#4E5968">'+fmtN(base)+'원</span></div>'
-      +'<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:#8B95A1">부가세(10%)</span><span style="color:#4E5968">'+fmtN(vat)+'원</span></div>'
-      +(adjustVat!==0?'<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:#8B95A1">할인/조정(VAT포함)</span><span style="color:'+(adjustVat<0?"#F04452":"#3182F6")+'">'+(adjustVat>=0?"+":"")+fmtN(adjustVat)+'원</span></div>':"")
-      +'<div style="height:1px;background:#E5E8EB;margin:10px 0"></div>'
-      +'<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0"><span style="font-size:15px;font-weight:700">총 '+(QMODE==="sell"?"결제금액":"월 납부액")+'</span><span style="font-size:20px;font-weight:700">'+fmtN(total)+'원'+perMonth+'</span></div>'
+    +'<div class="card" style="padding:18px 22px">'
+      +'<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px"><span style="color:#8B95A1">공급가액</span><span style="color:#4E5968">'+fmtN(base)+'원</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px"><span style="color:#8B95A1">부가세(10%)</span><span style="color:#4E5968">'+fmtN(vat)+'원</span></div>'
+      +(adjustVat!==0?'<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px"><span style="color:#8B95A1">할인/조정(VAT포함)</span><span style="color:'+(adjustVat<0?"#F04452":"#3182F6")+'">'+(adjustVat>=0?"+":"")+fmtN(adjustVat)+'원</span></div>':"")
+      +'<div style="height:1px;background:#E5E8EB;margin:8px 0"></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0"><span style="font-size:14px;font-weight:700">총 '+(QM==="sell"?"결제금액":"월 납부액")+'</span><span style="font-size:19px;font-weight:700">'+fmtN(total)+'원'+perMonth+'</span></div>'
     +'</div>'
-    // 입금계좌
-    +'<div class="card" style="padding:20px 24px">'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div style="width:32px;height:32px;background:#EBF2FE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px">💳</div><span style="font-size:13px;font-weight:600">입금 계좌</span></div>'
-      +'<div style="background:#F9FAFB;border-radius:12px;padding:14px 16px"><div style="font-size:15px;font-weight:600">'+esc(COMPANY.bank)+" "+esc(COMPANY.account)+'</div><div style="font-size:12px;color:#8B95A1;margin-top:2px">예금주 '+esc(COMPANY.holder)+'</div></div>'
+    +'<div class="card" style="padding:18px 22px">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:30px;height:30px;background:#EBF2FE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px">💳</div><span style="font-size:13px;font-weight:600">입금 계좌</span></div>'
+      +'<div style="background:#F9FAFB;border-radius:12px;padding:12px 14px"><div style="font-size:14px;font-weight:600">'+esc(CO.bank)+" "+esc(CO.account)+'</div><div style="font-size:11px;color:#8B95A1;margin-top:2px">예금주 '+esc(CO.holder)+'</div></div>'
     +'</div>'
     + specialHtml
-    // 공급자 정보 푸터
-    +'<div class="card" style="padding:20px 24px">'
-      +'<div style="font-size:13px;font-weight:600;margin-bottom:12px">공급자 정보</div>'
-      +'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">상호</span><span style="color:#4E5968">'+esc(COMPANY.name)+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">사업자등록번호</span><span style="color:#4E5968">'+esc(COMPANY.bizno)+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#8B95A1">대표자</span><span style="color:#4E5968">'+esc(COMPANY.ceo)+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;gap:20px"><span style="color:#8B95A1;white-space:nowrap">주소</span><span style="color:#4E5968;text-align:right">'+esc(COMPANY.addr)+'</span></div>'
+    +'<div class="card" style="padding:18px 22px">'
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:10px">공급자 정보</div>'
+      +'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">상호</span><span style="color:#4E5968">'+esc(CO.name)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">사업자등록번호</span><span style="color:#4E5968">'+esc(CO.bizno)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">대표자</span><span style="color:#4E5968">'+esc(CO.ceo)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;gap:20px"><span style="color:#8B95A1;white-space:nowrap">주소</span><span style="color:#4E5968;text-align:right">'+esc(CO.addr)+'</span></div>'
     +'</div>'
-    +'<div style="text-align:center;padding:12px 0;font-size:11px;color:#B0B8C1">본 견적서는 '+dateStr+' 기준이며, 유효기간은 발행일로부터 30일입니다.</div>'
-    +'</div>'
-    +'<button class="pbtn noprint" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>'
-    +'</body></html>';
+    +'<div style="text-align:center;padding:10px 0 4px;font-size:10px;color:#B0B8C1">본 견적서는 '+dateStr+' 기준이며, 유효기간은 발행일로부터 30일입니다.</div>'
+    +'</div>'+shareBtns;
 
+  return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>견적서_'+esc(d.clientCo)+'</title>'
+    +'<style>'
+    +'@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");'
+    +'*{margin:0;padding:0;box-sizing:border-box;font-family:\'Pretendard Variable\',Pretendard,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'body{background:#F2F4F6;padding:20px;color:#191F28}'
+    +'.wrap{max-width:560px;margin:0 auto}'
+    +'.card{background:#fff;border-radius:16px;margin-bottom:10px}'
+    +'@page{size:A4;margin:8mm}'
+    +'@media print{body{background:#fff;padding:0}.wrap{max-width:100%}.card{border:1px solid #F2F4F6;break-inside:avoid;page-break-inside:avoid}.noprint{display:none!important}}'
+    +'</style></head><body>'+body+'</body></html>';
+}
+
+// ── 견적서 발행 (인쇄 미리보기 새 창) ──
+window.printQuote=function(){
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
+  if(!sel.length&&!ADJUST.length){alert("견적할 상품을 선택해주세요.");return;}
+  var d=collectQuoteData();
+  var html=buildQuoteHtml(d,{showShareBtns:true});
   var w=window.open("","_blank");
   w.document.write(html);
   w.document.close();
 };
+
+// ── 견적 링크 생성 (Firebase 저장 → 공유 URL) ──
+window.shareQuote=async function(){
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
+  if(!sel.length&&!ADJUST.length){alert("견적할 상품을 선택해주세요.");return;}
+  var d=collectQuoteData();
+  var qid=uid()+uid().slice(0,3);
+  try{
+    setSbar("ing");
+    await set(ref(db,"cashbook/quotes/"+qid),{data:d,createdAt:new Date().toISOString()});
+    setSbar("ok");
+    var base=window.location.origin+window.location.pathname;
+    var url=base+"?q="+qid;
+    showShareModal(url,d.clientCo);
+  }catch(e){
+    setSbar("err");
+    alert("링크 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+  }
+};
+
+function showShareModal(url,clientCo){
+  S.shareUrl=url;S.shareClient=clientCo;S.modal="share";render();
+}
+window.copyShareLink=function(){
+  var inp=document.getElementById("share-url-input");
+  if(inp){inp.select();}
+  navigator.clipboard.writeText(S.shareUrl).then(function(){
+    var btn=document.getElementById("copy-btn");
+    if(btn){btn.textContent="✓ 복사됨!";setTimeout(function(){if(btn)btn.textContent="🔗 링크 복사";},1500);}
+  }).catch(function(){
+    if(inp){inp.select();document.execCommand("copy");}
+    alert("링크가 복사되었습니다.");
+  });
+};
+
+// ── 공유 견적 뷰어 (링크 접속 시) ──
+async function showSharedQuote(qid){
+  var root=document.getElementById("root");
+  root.innerHTML='<div class="loading"><div class="spinner"></div><div class="ltext">견적서를 불러오는 중…</div></div>';
+  try{
+    var snap=await get(ref(db,"cashbook/quotes/"+qid));
+    if(!snap.exists()){
+      root.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:10px;padding:20px;text-align:center"><div style="font-size:40px">🔍</div><div style="font-size:16px;font-weight:700;color:#191F28">견적서를 찾을 수 없어요</div><div style="font-size:13px;color:#8B95A1">링크가 만료되었거나 삭제된 견적서입니다.</div></div>';
+      return;
+    }
+    var rec=snap.val();
+    var html=buildQuoteHtml(rec.data,{showShareBtns:true});
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(e){
+    root.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:10px;padding:20px;text-align:center"><div style="font-size:40px">⚠️</div><div style="font-size:16px;font-weight:700">불러오기 실패</div><div style="font-size:13px;color:#8B95A1">잠시 후 다시 시도해주세요.</div></div>';
+  }
+}
 
 init();
 </script>
