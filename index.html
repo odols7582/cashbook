@@ -5,8 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="사업자장부">
-<title>사업자장부</title>
+<meta name="apple-mobile-web-app-title" content="POS 장비 견적서">
+<title>POS 장비 견적서</title>
+<meta property="og:title" content="POS 장비 견적서">
+<meta property="og:description" content="POS · 키오스크 · 카드단말기 견적서를 확인하세요.">
+<meta property="og:type" content="website">
+<meta name="description" content="POS · 키오스크 · 카드단말기 견적서">
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1003,22 +1007,18 @@ function renderQuote(){
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">🧾 견적서</span><span style="font-size:11px;color:#888">'+dateStr+'</span></div>'
       +'<div style="padding:0 20px 18px">'
-        +'<div class="qmode" style="padding:0 0 14px;border-bottom:none">'
-          +'<button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button>'
-          +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
-        +'</div>'
         +'<div class="qsec-label">📩 받는 분</div>'
         +'<div class="qmeta" style="padding:0 0 14px;border-bottom:1px solid #F2F4F6">'
           +'<div class="qmeta-field" style="grid-column:1/-1"><label class="qmeta-label">상호명</label><input class="qmeta-input" id="qm-co" placeholder="예: ○○마트" value="'+esc(QCLIENT.co)+'" oninput="setQClient(&apos;co&apos;,this.value)"></div>'
           +'<div class="qmeta-field"><label class="qmeta-label">담당자</label><input class="qmeta-input" id="qm-name" placeholder="홍길동" value="'+esc(QCLIENT.name)+'" oninput="setQClient(&apos;name&apos;,this.value)"></div>'
-          +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" placeholder="010-0000-0000" value="'+esc(QCLIENT.tel)+'" oninput="setQClient(&apos;tel&apos;,this.value)"></div>'
+          +'<div class="qmeta-field"><label class="qmeta-label">연락처</label><input class="qmeta-input" id="qm-tel" type="tel" inputmode="numeric" placeholder="010-0000-0000" value="'+esc(QCLIENT.tel)+'" oninput="onTelInput(this,&apos;client&apos;)"></div>'
         +'</div>'
         +'<div class="qsec-label" style="margin-top:16px">👤 영업 담당자</div>'
         +'<div class="qsales-grid">'
           +'<input class="qsales-input" id="qs-dept" placeholder="소속" value="'+esc(QSALES.dept)+'" oninput="setQSales(&apos;dept&apos;,this.value)">'
           +'<input class="qsales-input" id="qs-rank" placeholder="직급" value="'+esc(QSALES.rank)+'" oninput="setQSales(&apos;rank&apos;,this.value)">'
           +'<input class="qsales-input" id="qs-name" placeholder="이름" value="'+esc(QSALES.name)+'" oninput="setQSales(&apos;name&apos;,this.value)">'
-          +'<input class="qsales-input" id="qs-tel" placeholder="연락처" value="'+esc(QSALES.tel)+'" oninput="setQSales(&apos;tel&apos;,this.value)">'
+          +'<input class="qsales-input" id="qs-tel" type="tel" inputmode="numeric" placeholder="연락처" value="'+esc(QSALES.tel)+'" oninput="onTelInput(this,&apos;sales&apos;)">'
         +'</div>'
       +'</div>'
     +'</div>'
@@ -1033,6 +1033,10 @@ function renderQuote(){
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">📋 견적 내역</span></div>'
       +'<div style="padding:0 20px 18px">'
+        +'<div class="qmode" style="padding:0 0 14px;border-bottom:none">'
+          +'<button class="qmode-btn '+(QMODE==="sell"?"on":"")+'" onclick="setQM(&apos;sell&apos;)">💳 판매 견적</button>'
+          +'<button class="qmode-btn '+(QMODE==="monthly"?"on":"")+'" onclick="setQM(&apos;monthly&apos;)">📅 월 관리비 견적</button>'
+        +'</div>'
         +'<div class="qitems" id="qi-panel" style="border-bottom:none;padding:0">'+qc.items+'</div>'
         +'<div id="q-total-area">'+(qc.hasItems?'<div class="qtotal" style="border-bottom:none;background:#F9FAFB;border-radius:12px;margin-top:10px">'+qc.total+'</div>':"")+'</div>'
       +'</div>'
@@ -1193,6 +1197,28 @@ window.setQM=function(m){QMODE=m;render();};
 window.setQSpecial=function(v){QSPECIAL=v;};
 window.setQSales=function(f,v){QSALES[f]=v;};
 window.setQClient=function(f,v){QCLIENT[f]=v;};
+// 전화번호 하이픈 자동 포맷
+function formatPhone(v){
+  var n=(v||"").replace(/[^0-9]/g,"").slice(0,11);
+  if(n.length<4)return n;
+  if(n.length<7){
+    // 02 지역번호 처리
+    if(n.startsWith("02"))return n.slice(0,2)+"-"+n.slice(2);
+    return n.slice(0,3)+"-"+n.slice(3);
+  }
+  if(n.startsWith("02")){
+    if(n.length<10)return n.slice(0,2)+"-"+n.slice(2,5)+"-"+n.slice(5);
+    return n.slice(0,2)+"-"+n.slice(2,6)+"-"+n.slice(6,10);
+  }
+  if(n.length<11)return n.slice(0,3)+"-"+n.slice(3,6)+"-"+n.slice(6);
+  return n.slice(0,3)+"-"+n.slice(3,7)+"-"+n.slice(7,11);
+}
+window.onTelInput=function(el,target){
+  var formatted=formatPhone(el.value);
+  el.value=formatted;
+  if(target==="client")QCLIENT.tel=formatted;
+  else if(target==="sales")QSALES.tel=formatted;
+};
 window.resetQ=function(){
   ADJUST=[];QSPECIAL="";QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};ADJFORM={label:"",amount:"",sign:-1};
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
