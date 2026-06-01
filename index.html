@@ -833,7 +833,7 @@ function renderPrice(){
 
 window.openPriceModal=function(id){
   if(id){
-    var p=(S.products||PRODUCTS).find(function(x){return x.id===id;});
+    var p=(S.products||PRODUCTS).find(function(x){return String(x.id)===String(id);});
     if(!p)return;
     S.priceModal={show:true,editId:id,form:{name:p.name||"",spec:p.spec||"",buy:p.buy||"",sell:p.sell||"",monthly:p.monthly||0,monthlyNote:p.monthlyNote||"별도",img:p.img||""}};
   }else{
@@ -860,7 +860,7 @@ window.savePriceModal=function(){
   var prods=S.products?[].concat(S.products):PRODUCTS.map(function(p){return Object.assign({},p);});
   if(S.priceModal.editId){
     prods=prods.map(function(p){
-      if(p.id!==S.priceModal.editId)return p;
+      if(String(p.id)!==String(S.priceModal.editId))return p;
       return Object.assign({},p,{name:f.name.trim(),spec:f.spec.trim(),buy:Number(f.buy)||0,sell:Number(f.sell),monthly:Number(f.monthly)||0,monthlyNote:f.monthlyNote,img:f.img});
     });
   }else{
@@ -875,7 +875,7 @@ window.savePriceModal=function(){
 };
 window.delProduct=function(id){
   if(!confirm("이 상품을 삭제하시겠습니까?"))return;
-  S.products=(S.products||[]).filter(function(p){return p.id!==id;});
+  S.products=(S.products||[]).filter(function(p){return String(p.id)!==String(id);});
   saveProducts();
   render();
 };
@@ -887,7 +887,7 @@ function renderQuote(){
   var dateStr=d.getFullYear()+"년 "+(d.getMonth()+1)+"월 "+d.getDate()+"일";
   var qc=buildQContent();
 
-  var prodRows=PRODUCTS.map(function(p){
+  var prodRows=(S.products||PRODUCTS).map(function(p){
     return '<div class="qprod-row '+(QTY[p.id]>0?"sel":"")+'" id="qrow-'+p.id+'">'
       +'<div class="qprod-left">'
         +'<img class="qprod-img" src="'+p.img+'" alt="'+p.name+'">'
@@ -948,7 +948,7 @@ function renderQuote(){
 }
 
 function buildQContent(){
-  var sel=PRODUCTS.filter(function(p){return QTY[p.id]>0;});
+  var sel=(S.products||PRODUCTS).filter(function(p){return QTY[p.id]>0;});
   if(!sel.length) return {items:'<div class="qempty">장비를 선택하면 자동으로 표시됩니다</div>',total:"",hasItems:false};
   var supply=0,monthly=0;
   var rows=sel.map(function(p){
@@ -1000,7 +1000,7 @@ function refreshQPanel(){
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.resetQ=function(){
-  PRODUCTS.forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
+  (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
 };
