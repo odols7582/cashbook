@@ -777,8 +777,8 @@ function renderPrice(){
           +'<span class="pbadge-monthly">📅 월 관리비 '+(p.monthly>0?fmtN(p.monthly)+'원 ('+(p.monthlyNote||"별도")+')':"무상")+'</span>'
         +'</div>'
         +'<div class="pcard-actions">'
-          +'<button class="pcard-edit-btn" onclick="openPriceModal(''+p.id+'')">✏️ 수정</button>'
-          +'<button class="pcard-del-btn" onclick="delProduct(''+p.id+'')">🗑 삭제</button>'
+          +'<button class="pcard-edit-btn" onclick="openPriceModal(&apos;'+p.id+'&apos;)">✏️ 수정</button>'
+          +'<button class="pcard-del-btn" onclick="delProduct(&apos;'+p.id+'&apos;)">🗑 삭제</button>'
         +'</div>'
       +'</div>'
     +'</div>';
