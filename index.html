@@ -464,6 +464,21 @@ input.fiinput{display:none}
   .qadjust-input:focus{outline:none;border-color:#FF9800}
   .qadjust-del{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;width:22px;height:22px;font-size:13px;cursor:pointer;font-family:inherit;border-radius:2px;line-height:1;flex-shrink:0;margin-left:4px}
   .qadjust-del:hover{background:#FFE0E0}
+
+  /* ── 할인/조정 입력폼 ── */
+  .qadjust-name{font-size:13px;font-weight:600;color:#1A1A1A}
+  .qadjust-form{background:#FFFBF0;border:1px solid #FFE0B2;border-radius:4px;padding:12px;margin-top:8px}
+  .qadjust-form-title{font-size:12px;font-weight:700;color:#E65100;margin-bottom:8px}
+  .qadjust-form-row{display:flex;gap:6px;align-items:center}
+  .qadjust-form-label{flex:1;min-width:0;border:1px solid #FFD9A0;background:#fff;padding:7px 9px;font-size:12px;font-family:inherit;border-radius:2px}
+  .qadjust-form-label:focus{outline:none;border-color:#FF9800}
+  .qadjust-form-amount{width:90px;border:1px solid #FFD9A0;background:#fff;padding:7px 9px;font-size:12px;font-family:inherit;border-radius:2px;text-align:right;font-variant-numeric:tabular-nums}
+  .qadjust-form-amount:focus{outline:none;border-color:#FF9800}
+  .qadjust-form-btn{background:#FF9800;color:#fff;border:none;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-radius:2px;white-space:nowrap;flex-shrink:0}
+  .qadjust-form-btn:hover{background:#F57C00}
+  .qadjust-form-hint{font-size:11px;color:#999;margin-top:7px;line-height:1.5}
+  .qadjust-del{background:#FFF0F0;color:#C53030;border:1px solid #FFD0D0;width:20px;height:20px;font-size:12px;cursor:pointer;font-family:inherit;border-radius:2px;line-height:1;flex-shrink:0;margin-left:6px}
+  .qadjust-del:hover{background:#FFE0E0}
 </style>
 </head>
 <body>
@@ -767,7 +782,8 @@ const PRODUCTS=[
 var QTY={};
 PRODUCTS.forEach(function(p){QTY[p.id]=0;});
 var QMODE="sell";
-var ADJUST=[]; // 할인/조정 항목 {id, label, amount}
+var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
+var ADJFORM={label:"",amount:""}; // 입력 중인 할인 폼
 
 /* ── 가격표 ── */
 function renderPrice(){
@@ -986,31 +1002,37 @@ function buildQContent(){
     +'</div>';
   }).join("");
 
-  // 할인/조정 항목
-  var adjustSum=0;
+  // 확정된 할인/조정 항목 (읽기 전용 표시)
   var adjustRows=ADJUST.map(function(a){
     var amt=Number(a.amount)||0;
-    adjustSum+=amt;
     if(QMODE==="sell")supply+=amt; else monthly+=amt;
     var sign=amt>=0?"+":"";
     var color=amt>=0?"#1A73E8":"#C53030";
     return '<div class="qitem-row qadjust-row">'
       +'<div class="qitem-info">'
         +'<span class="qadjust-icon">'+(amt<0?"🏷️":"➕")+'</span>'
-        +'<input class="qadjust-label" value="'+esc(a.label)+'" placeholder="할인/조정 명칭" oninput="updAdjust(&apos;'+a.id+'&apos;,&apos;label&apos;,this.value)">'
+        +'<span class="qadjust-name">'+esc(a.label)+'</span>'
       +'</div>'
       +'<div class="qitem-qty"></div>'
-      +'<div class="qitem-amt qadjust-amt">'
-        +'<input class="qadjust-input" type="number" value="'+a.amount+'" placeholder="0" oninput="updAdjust(&apos;'+a.id+'&apos;,&apos;amount&apos;,this.value)" style="color:'+color+'">'
-        +'<span style="color:'+color+';font-weight:700;margin-left:2px">원</span>'
+      +'<div class="qitem-amt" style="color:'+color+';font-weight:700">'
+        +sign+fmtN(amt)+'원'
         +'<button class="qadjust-del" onclick="delAdjust(&apos;'+a.id+'&apos;)">×</button>'
       +'</div>'
     +'</div>';
   }).join("");
 
-  var addBtn='<div style="padding:8px 0;text-align:center"><button class="qadd-adjust" onclick="addAdjust()">+ 할인 / 조정 항목 추가</button></div>';
+  // 할인/조정 입력 폼
+  var addForm='<div class="qadjust-form">'
+    +'<div class="qadjust-form-title">🏷️ 할인 / 조정 항목 추가</div>'
+    +'<div class="qadjust-form-row">'
+      +'<input class="qadjust-form-label" id="adj-label" placeholder="명칭 (예: 할인, 설치비)" value="'+esc(ADJFORM.label)+'" oninput="ADJFORM.label=this.value">'
+      +'<input class="qadjust-form-amount" id="adj-amount" type="number" placeholder="금액" value="'+esc(ADJFORM.amount)+'" oninput="ADJFORM.amount=this.value">'
+      +'<button class="qadjust-form-btn" onclick="commitAdjust()">추가</button>'
+    +'</div>'
+    +'<div class="qadjust-form-hint">💡 할인은 <b style="color:#C53030">마이너스(-)</b>, 추가비용은 <b style="color:#1A73E8">플러스(+)</b>로 입력</div>'
+  +'</div>';
 
-  var allRows=rows+adjustRows+addBtn;
+  var allRows=rows+adjustRows+addForm;
 
   var totalHtml="";
   if(QMODE==="sell"){
@@ -1029,27 +1051,16 @@ function buildQContent(){
   }
   return {items:allRows,total:totalHtml,hasItems:true};
 }
-window.addAdjust=function(){
-  ADJUST.push({id:uid(),label:"할인",amount:0});
+window.commitAdjust=function(){
+  var label=(ADJFORM.label||"").trim();
+  var amount=ADJFORM.amount;
+  if(amount===""||amount==="-"||isNaN(Number(amount))){alert("금액을 입력해주세요. (할인은 -, 추가비용은 +)");return;}
+  if(Number(amount)===0){alert("0원은 추가할 수 없습니다.");return;}
+  if(!label)label=Number(amount)<0?"할인":"추가비용";
+  ADJUST.push({id:uid(),label:label,amount:Number(amount)});
+  ADJFORM={label:"",amount:""};
   render();
 };
-window.updAdjust=function(id,field,val){
-  ADJUST=ADJUST.map(function(a){
-    if(a.id!==id)return a;
-    var v=val;
-    if(field==="amount")v=val===""||val==="-"?val:Number(val);
-    return Object.assign({},a,{[field]:v});
-  });
-  // 금액 변경 시 합계만 갱신 (label은 입력 중이라 전체 render 안 함)
-  if(field==="amount")refreshQTotalOnly();
-};
-function refreshQTotalOnly(){
-  var qc=buildQContent();
-  var totalEl=document.getElementById("q-total-area");
-  if(totalEl&&qc.hasItems){
-    totalEl.innerHTML='<div class="qtotal">'+qc.total+'</div>';
-  }
-}
 window.delAdjust=function(id){
   ADJUST=ADJUST.filter(function(a){return a.id!==id;});
   render();
