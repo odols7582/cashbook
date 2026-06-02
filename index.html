@@ -563,9 +563,11 @@ input.fiinput{display:none}
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getDatabase,ref,onValue,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getAuth,signInAnonymously,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const FC={apiKey:"AIzaSyAsKbG2gI8_IS4L7iENPcZ0PIEdjhY2210",authDomain:"my-cashbook-abdb7.firebaseapp.com",databaseURL:"https://my-cashbook-abdb7-default-rtdb.firebaseio.com",projectId:"my-cashbook-abdb7",storageBucket:"my-cashbook-abdb7.firebasestorage.app",messagingSenderId:"922322436947",appId:"1:922322436947:web:03c9a6aedcefda9d9157a6"};
 const app=initializeApp(FC);
 const db=getDatabase(app);
+const auth=getAuth(app);
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function fmt(n){return(n==null||isNaN(n)||n===""?"":Number(n).toLocaleString("ko-KR"))}
@@ -594,11 +596,23 @@ function saveTodos(){fbSave("cashbook/todos",S.todos);}
 function setSbar(st){var b=document.getElementById("sbar"),sp=document.getElementById("spill"),st2=document.getElementById("stxt");if(!b||!sp||!st2)return;sp.className="sync-pill "+st;if(st==="ok")st2.textContent="동기화 완료";else if(st==="ing")st2.textContent="연결 중";else st2.textContent="오프라인";}
 
 async function init(){
-  // 공유 링크로 접속 시 견적 뷰어 모드
+  // 공유 링크로 접속 시 견적 뷰어 모드 (인증 후 견적만 읽기)
   var urlParams=new URLSearchParams(window.location.search);
   var quoteId=urlParams.get("q");
   if(quoteId){
+    // 견적 뷰어도 익명 로그인 후 읽기 (규칙상 auth 필요)
+    try{ await signInAnonymously(auth); }catch(e){}
     return showSharedQuote(quoteId);
+  }
+  // 익명 로그인
+  try{
+    setSbar("ing");
+    await signInAnonymously(auth);
+  }catch(e){
+    setSbar("err");
+    var rt=document.getElementById("root");
+    if(rt)rt.innerHTML='<div class="loading"><div class="ltext" style="text-align:center;line-height:1.6">로그인에 실패했어요.<br>Firebase 콘솔에서 <b>익명 인증</b>이<br>활성화되어 있는지 확인해주세요.</div></div>';
+    return;
   }
   try{
     var snap=await get(ref(db,"cashbook"));
