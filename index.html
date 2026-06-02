@@ -589,7 +589,7 @@ const IV=[{id:uid(),date:"2026-04-02",deposit:505000,withdraw:null,category:"cap
 var S={tab:"ledger",rows:[],todos:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
-function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");}},400);}
+function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");window.__lastError="저장 실패 ("+path+"): "+(e&&e.message?e.message:e);console.error("[저장실패]",path,e);alert("⚠️ 저장 실패\n\n"+(e&&e.message?e.message:e)+"\n\n로그인/권한 문제일 수 있어요.");}},400);}
 function saveRows(){fbSave("cashbook/rows",S.rows);}
 function saveProducts(){fbSave("cashbook/products",S.products);}
 function saveTodos(){fbSave("cashbook/todos",S.todos);}
@@ -637,12 +637,18 @@ async function init(){
       // QTY 재동기화
       S.products.forEach(function(p){if(QTY[p.id]===undefined)QTY[p.id]=0;});
       render();
+    },function(err){
+      console.error("[products 읽기 거부]",err);
+      window.__lastError="products 읽기 거부: "+(err&&err.message?err.message:err);
+      alert("⚠️ 상품 데이터 읽기 거부\n\n"+(err&&err.message?err.message:err)+"\n\nFirebase 규칙/인증 확인이 필요해요.");
     });
     setSbar("ok");
   }catch(e){
     setSbar("err");
-    S.rows=IV;S.todos=[];S.products=PRODUCTS.map(function(p){return Object.assign({},p);});
-    render();
+    window.__lastError="데이터 읽기 실패: "+(e&&e.message?e.message:e);
+    console.error("[읽기실패]",e);
+    var rt=document.getElementById("root");
+    if(rt)rt.innerHTML='<div class="loading"><div class="ltext" style="text-align:center;line-height:1.7;max-width:300px">⚠️ 데이터를 불러오지 못했어요<br><br><span style="font-size:11px;color:#F04452">'+(e&&e.message?e.message:e)+'</span><br><br><span style="font-size:11px;color:#8B95A1">Firebase 규칙 또는 인증 문제일 수 있어요.<br>잠시 후 새로고침해보세요.</span></div></div>';
   }
 }
 
