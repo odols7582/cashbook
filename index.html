@@ -1404,22 +1404,27 @@ function buildQuoteHtml(d,opts){
     monthly+=p.monthly*q;
     var amtLabel=QM==="monthly"&&p.monthly===0?"무상":fmtN(amt)+"원"+(QM==="monthly"?"/월":"");
     var imgHtml=p.img?'<img src="'+p.img+'" style="width:42px;height:42px;object-fit:contain;background:#F2F4F6;border-radius:10px;padding:3px">':'<div style="width:42px;height:42px;background:#F2F4F6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px">📦</div>';
-    itemsHtml+='<tr>'
-      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6"><div style="display:flex;align-items:center;gap:10px">'+imgHtml+'<div><div style="font-size:13px;font-weight:600;color:#191F28">'+esc(p.name)+'</div><div style="font-size:10px;color:#8B95A1">'+esc((p.spec||"").split("\n")[0])+'</div></div></div></td>'
-      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:center;font-size:12px;color:#4E5968">'+q+'</td>'
-      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:12px;color:#4E5968">'+fmtN(unit)+'원</td>'
-      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:13px;font-weight:600;color:#191F28">'+amtLabel+'</td>'
-      +'</tr>';
+    var unitLabel=QM==="monthly"&&p.monthly===0?"무상":fmtN(unit)+"원";
+    itemsHtml+='<div style="padding:12px 0;border-bottom:1px solid #F2F4F6">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+imgHtml
+        +'<div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:600;color:#191F28;line-height:1.4">'+esc(p.name)+'</div>'
+        +((p.spec||"").trim()?'<div style="font-size:10px;color:#8B95A1;margin-top:2px">'+esc((p.spec||"").split("\n")[0])+'</div>':"")+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:14px;font-variant-numeric:tabular-nums">'
+        +'<span style="font-size:11px;color:#8B95A1">수량 <b style="color:#4E5968">'+q+'</b></span>'
+        +'<span style="font-size:11px;color:#8B95A1">단가 <b style="color:#4E5968">'+unitLabel+'</b></span>'
+        +'<span style="font-size:14px;font-weight:700;color:#191F28">'+amtLabel+'</span>'
+      +'</div>'
+    +'</div>';
   });
   (d.adjust||[]).forEach(function(a){
     var amt=Number(a.amount)||0;
     adjustVat+=amt;
     var color=amt<0?"#F04452":"#3182F6";
-    itemsHtml+='<tr>'
-      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6"><div style="display:flex;align-items:center;gap:10px"><div style="width:42px;height:42px;background:'+(amt<0?"#FFF0F0":"#EBF2FE")+';border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px">'+(amt<0?"🏷️":"➕")+'</div><div style="font-size:13px;font-weight:600;color:#191F28">'+esc(a.label)+'</div></div></td>'
-      +'<td style="border-bottom:1px solid #F2F4F6"></td><td style="border-bottom:1px solid #F2F4F6"></td>'
-      +'<td style="padding:11px 0;border-bottom:1px solid #F2F4F6;text-align:right;font-size:13px;font-weight:600;color:'+color+'">'+(amt>=0?"+":"")+fmtN(amt)+'원</td>'
-      +'</tr>';
+    itemsHtml+='<div style="padding:12px 0;border-bottom:1px solid #F2F4F6;display:flex;align-items:center;justify-content:space-between;gap:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px;min-width:0"><div style="width:42px;height:42px;flex-shrink:0;background:'+(amt<0?"#FFF0F0":"#EBF2FE")+';border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px">'+(amt<0?"🏷️":"➕")+'</div><div style="font-size:13px;font-weight:600;color:#191F28">'+esc(a.label)+'</div></div>'
+      +'<div style="font-size:14px;font-weight:700;color:'+color+';white-space:nowrap">'+(amt>=0?"+":"")+fmtN(amt)+'원</div>'
+    +'</div>';
   });
 
   var base=QM==="sell"?supply:monthly;
@@ -1491,8 +1496,8 @@ function buildQuoteHtml(d,opts){
       +'</div>':"")
     +'</div></div>'
     +'<div class="card" style="padding:18px 22px">'
-      +'<div style="font-size:13px;font-weight:600;margin-bottom:6px">견적 상품</div>'
-      +'<table style="width:100%;border-collapse:collapse"><thead><tr style="font-size:10px;color:#8B95A1"><th style="text-align:left;padding:5px 0;font-weight:500">품목</th><th style="text-align:center;padding:5px 0;font-weight:500;width:34px">수량</th><th style="text-align:right;padding:5px 0;font-weight:500;width:78px">단가</th><th style="text-align:right;padding:5px 0;font-weight:500;width:88px">금액</th></tr></thead><tbody>'+itemsHtml+'</tbody></table>'
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:4px">견적 상품</div>'
+      +'<div>'+itemsHtml+'</div>'
     +'</div>'
     +'<div class="card" style="padding:18px 22px">'
       +'<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px"><span style="color:#8B95A1">공급가액</span><span style="color:#4E5968">'+fmtN(base)+'원</span></div>'
