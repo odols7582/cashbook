@@ -569,6 +569,12 @@ input.fiinput{display:none}
   .qmgr-act:hover{background:#E5E8EB}
   .qmgr-act.del{background:#FFF0F0;color:#F04452}
   .qmgr-act.del:hover{background:#FFE0E0}
+
+  /* ── 가격표 순서 이동 ── */
+  .pcard-move{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:3px;z-index:2}
+  .pmove-btn{width:26px;height:22px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:6px;font-size:10px;color:#4E5968;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+  .pmove-btn:hover:not(:disabled){background:#3182F6;color:#fff;border-color:#3182F6}
+  .pmove-btn:disabled{opacity:.3;cursor:default}
 </style>
 </head>
 <body>
@@ -945,9 +951,14 @@ function renderPrice(){
 
   var cards=prods.map(function(p,i){
     var imgSrc=p.img||"";
+    var moveBtns='<div class="pcard-move">'
+      +'<button class="pmove-btn" '+(i===0?"disabled":"")+' onclick="moveProduct(&apos;'+p.id+'&apos;,-1)" title="위로">▲</button>'
+      +'<button class="pmove-btn" '+(i===prods.length-1?"disabled":"")+' onclick="moveProduct(&apos;'+p.id+'&apos;,1)" title="아래로">▼</button>'
+    +'</div>';
     return '<div class="pcard">'
       +'<div class="pcard-img">'
         +'<span class="pcard-num">No.'+(i+1)+'</span>'
+        +moveBtns
         +(imgSrc?'<img src="'+imgSrc+'" alt="'+esc(p.name)+'">':'<div style="font-size:32px;color:#DDD">📦</div>')
       +'</div>'
       +'<div class="pcard-body">'
@@ -1057,6 +1068,17 @@ window.savePriceModal=function(){
   S.products=prods;
   saveProducts();
   S.priceModal.show=false;
+  render();
+};
+window.moveProduct=function(id,dir){
+  var arr=[].concat(S.products||PRODUCTS);
+  var idx=arr.findIndex(function(p){return String(p.id)===String(id);});
+  if(idx<0)return;
+  var ni=idx+dir;
+  if(ni<0||ni>=arr.length)return;
+  var tmp=arr[idx];arr[idx]=arr[ni];arr[ni]=tmp;
+  S.products=arr;
+  saveProducts();
   render();
 };
 window.delProduct=function(id){
