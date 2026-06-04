@@ -21,7 +21,7 @@ html,body{font-family:'Pretendard Variable',Pretendard,-apple-system,'맑은 고
 .topbar{background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid #F2F4F6;position:fixed;top:0;left:0;right:0;z-index:200}
 .topbar-inner{max-width:1080px;margin:0 auto;padding:0 16px;height:56px;display:flex;align-items:center;gap:16px}
 .logo{display:flex;align-items:center;gap:8px;text-decoration:none}
-.logo-icon{width:34px;height:34px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;letter-spacing:-1px}
+.logo-icon{width:34px;height:34px;background:#fff;border:1px solid #F2F4F6;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:700;font-size:16px;letter-spacing:-1px;overflow:hidden;padding:2px}
 .logo-text{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-0.5px}
 .logo-sub{font-size:11px;color:var(--dim);margin-top:1px}
 .sync-pill{margin-left:auto;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;border:none}
@@ -37,6 +37,10 @@ html,body{font-family:'Pretendard Variable',Pretendard,-apple-system,'맑은 고
 .btn-backup:hover{background:#E5E8EB}
 
 /* ── 탭 네비 (네이버 탭 스타일) ── */
+.grpnav{background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid #F2F4F6;position:fixed;top:56px;left:0;right:0;z-index:195}
+.grpnav-inner{max-width:1080px;margin:0 auto;padding:8px 16px;display:flex;gap:8px}
+.grpitem{flex:1;background:#F2F4F6;border:none;padding:11px;font-size:14px;font-weight:700;color:#8B95A1;cursor:pointer;font-family:inherit;border-radius:12px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px}
+.grpitem.on{background:#191F28;color:#fff}
 .tabnav{background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid #F2F4F6;position:fixed;top:56px;left:0;right:0;z-index:190}
 .tabnav-inner{max-width:1080px;margin:0 auto;padding:0 16px;display:flex;overflow-x:auto}
 .tabnav-inner::-webkit-scrollbar{display:none}
@@ -215,9 +219,12 @@ input.fiinput{display:none}
 @media(max-width:768px){
   .main{padding:110px 0 70px}
   .qmgr-wrap{padding:0 14px}
+  .memo-wrap{padding:0 14px}
   .kpi-grid{grid-template-columns:1fr 1fr;padding:0 14px}
   .result-grid{grid-template-columns:1fr}
   .tabnav-inner{padding:0 8px}
+  .grpnav-inner{padding:7px 14px}
+  .grpitem{padding:10px;font-size:13px}
   .tabitem{padding:0 12px;font-size:13px}
   .tabitem{display:none}
   .bnav{display:block}
@@ -619,6 +626,27 @@ input.fiinput{display:none}
   .pin-key:active{background:#E5E8EB;transform:scale(.95)}
   .pin-del{background:transparent;font-size:22px;color:#8B95A1}
   .pin-del:active{background:#E5E8EB}
+
+  /* ── 영업메모 ── */
+  .memo-wrap{padding:0}
+  .memo-inp{width:100%;box-sizing:border-box;border:none;background:#F2F4F6;padding:11px 12px;font-size:14px;font-family:inherit;color:#191F28;border-radius:10px}
+  .memo-inp:focus{outline:2px solid #3182F6;background:#fff}
+  .memo-textarea{height:80px;resize:vertical;line-height:1.5}
+  .memo-search{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:11px 14px}
+  .memo-search input{flex:1;border:none;background:none;font-size:14px;font-family:inherit;color:#191F28;outline:none}
+  .memo-list{display:flex;flex-direction:column;gap:10px}
+  .memo-card{background:#fff;border-radius:16px;padding:16px 18px}
+  .memo-card.done{opacity:.6}
+  .memo-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .memo-co{font-size:15px;font-weight:700;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .memo-date{font-size:11px;color:#8B95A1;margin-top:3px}
+  .memo-done-btn{flex-shrink:0;background:#F2F4F6;color:#8B95A1;border:none;padding:6px 12px;font-size:11px;font-weight:700;border-radius:999px;cursor:pointer;font-family:inherit}
+  .memo-done-btn.on{background:#E1F8F0;color:#15B886}
+  .memo-content{font-size:13px;color:#4E5968;line-height:1.6;background:#F9FAFB;border-radius:10px;padding:12px 14px;margin-bottom:10px;white-space:pre-wrap}
+  .memo-actions{display:flex;gap:6px}
+  .memo-act{flex:1;text-align:center;background:#F2F4F6;color:#4E5968;border:none;padding:9px 4px;font-size:12px;font-weight:600;border-radius:9px;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:3px}
+  .memo-act:hover{background:#E5E8EB}
+  .memo-act.del{background:#FFF0F0;color:#F04452}
 </style>
 </head>
 <body>
@@ -662,7 +690,7 @@ var PIN_INPUT=""; // 입력 중인 PIN
 var PIN_SETUP=false; // 설정 모드
 var PIN_SETUP_FIRST=""; // 설정 시 1차 입력값
 var PIN_ERR=""; // 오류 메시지
-var S={tab:"ledger",rows:[],todos:[],quotes:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
+var S={tab:"price",rows:[],todos:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
 function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");window.__lastError="저장 실패 ("+path+"): "+(e&&e.message?e.message:e);console.error("[저장실패]",path,e);alert("⚠️ 저장 실패\n\n"+(e&&e.message?e.message:e)+"\n\n로그인/권한 문제일 수 있어요.");}},400);}
@@ -743,6 +771,11 @@ async function loadAppData(){
       if(v&&Array.isArray(v)&&v.length)SPEC_ITEMS=v.filter(Boolean);
       render();
     });
+    onValue(ref(db,"cashbook/memos"),function(sn){
+      var v=sn.val();
+      if(v){S.memos=Object.keys(v).map(function(k){return Object.assign({id:k},v[k]);});}else{S.memos=[];}
+      render();
+    });
     setSbar("ok");
   }catch(e){
     setSbar("err");
@@ -757,15 +790,16 @@ function render(){
   var root=document.getElementById("root");
   if(!root)return;
   var ac=S.todos.filter(function(t){return!t.done;}).length;
-  var tabs=[{id:"ledger",icon:"📒",label:"입출금장부"},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"todo",icon:"✓",label:"할일관리",badge:ac}];
-  var tabHtml=tabs.map(function(t){return'<button class="tabitem '+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')">'+t.icon+" "+t.label+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
-  var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')"><span class="nbtn-icon">'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
+  var tabs=[{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"memo",icon:"📝",label:"영업메모"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
+  var tabHtml=tabs.map(function(t){return'<button class="tabitem '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)">'+t.icon+" "+t.label+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
+  var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)"><span class="nbtn-icon">'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var body="";
   if(S.tab==="ledger")body=renderLedger();
   else if(S.tab==="calc")body=renderCalc();
   else if(S.tab==="price")body=renderPrice();
   else if(S.tab==="quote")body=renderQuote();
   else if(S.tab==="qmgr")body=renderQuotesMgr();
+  else if(S.tab==="memo")body=renderMemos();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
@@ -773,7 +807,7 @@ function render(){
   if(S.modal==="viewlog")body+=renderViewLogModal();
   root.innerHTML=
     '<div class="topbar"><div class="topbar-inner">'
-    +'<a class="logo"><div class="logo-icon">장</div><div><div class="logo-text">사업자장부</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
+    +'<a class="logo"><div class="logo-icon">'+(COMPANY.logo?'<img src="'+COMPANY.logo+'" style="width:100%;height:100%;object-fit:contain;border-radius:8px">':'장')+'</div><div><div class="logo-text">영업관리</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
     +'<div id="spill" class="sync-pill ing"><div class="sdot"></div><span id="stxt">연결 중</span></div>'
     +'<button class="btn-backup" onclick="changePin()" title="PIN 변경">🔒</button>'
     +'<button class="btn-backup" onclick="openBackup()">💾 백업</button>'
@@ -782,7 +816,7 @@ function render(){
     +'<div class="main">'+body+'</div>'
     +'<nav class="bnav"><div class="bnavi">'+bnav+"</div></nav>";
 }
-window.sw=function(t){S.tab=t;render();};
+window.sw=function(t){S.tab=t;render();window.scrollTo(0,0);};
 
 /* ── 입출금장부 ─────────────── */
 function renderLedger(){
@@ -1912,6 +1946,84 @@ function renderQuotesMgr(){
     +cards+'</div>';
 }
 window.setQMgrFilter=function(f){QMGRFILTER=f;render();};
+
+// ── 영업메모 탭 ──
+function renderMemos(){
+  var q=(S.memoSearch||"").trim().toLowerCase();
+  var list=[].concat(S.memos||[]).sort(function(a,b){return (b.createdAt||"").localeCompare(a.createdAt||"");});
+  var filtered=q?list.filter(function(m){return (m.co||"").toLowerCase().indexOf(q)>=0;}):list;
+
+  // 입력 폼
+  var form='<div class="box" style="margin-bottom:14px"><div class="box-head"><span class="box-title">📝 새 영업메모</span></div>'
+    +'<div style="padding:6px 20px 18px">'
+      +'<input class="memo-inp" id="memo-co" placeholder="상호명" value="'+esc(S.memoForm.co)+'" oninput="setMemoForm(&apos;co&apos;,this.value)">'
+      +'<input class="memo-inp" id="memo-tel" type="tel" inputmode="numeric" placeholder="연락처 (선택)" value="'+esc(S.memoForm.tel)+'" oninput="onMemoTel(this)" style="margin-top:8px">'
+      +'<textarea class="memo-inp memo-textarea" id="memo-content" placeholder="상담 내용, 특이사항 등을 입력하세요" oninput="setMemoForm(&apos;content&apos;,this.value)" style="margin-top:8px">'+esc(S.memoForm.content)+'</textarea>'
+      +'<button class="btn-green" onclick="addMemo()" style="width:100%;padding:12px;font-size:14px;margin-top:10px">+ 메모 저장</button>'
+    +'</div></div>';
+
+  // 검색
+  var search='<div style="margin-bottom:14px"><div class="memo-search"><span style="font-size:14px">🔍</span><input placeholder="상호명으로 검색" value="'+esc(S.memoSearch)+'" oninput="setMemoSearch(this.value)"></div></div>';
+
+  // 목록
+  var listHtml=filtered.length===0
+    ? '<div class="epage"><div class="eicon">📝</div><h3>'+(q?"검색 결과가 없어요":"등록된 메모가 없어요")+'</h3><p>'+(q?"다른 상호명으로 검색해보세요":"위에서 첫 영업메모를 작성해보세요")+'</p></div>'
+    : '<div class="memo-list">'+filtered.map(function(m){
+        var dt=m.createdAt?new Date(m.createdAt):null;
+        var dtStr=dt?(dt.getFullYear()+"."+String(dt.getMonth()+1).padStart(2,"0")+"."+String(dt.getDate()).padStart(2,"0")):"";
+        var telDigits=(m.tel||"").replace(/[^0-9]/g,"");
+        return '<div class="memo-card '+(m.done?"done":"")+'">'
+          +'<div class="memo-card-top">'
+            +'<div style="min-width:0;flex:1">'
+              +'<div class="memo-co">'+esc(m.co||"(상호 미입력)")+'</div>'
+              +'<div class="memo-date">'+dtStr+(m.tel?' · '+esc(m.tel):"")+'</div>'
+            +'</div>'
+            +'<button class="memo-done-btn '+(m.done?"on":"")+'" onclick="toggleMemoDone(&apos;'+m.id+'&apos;)">'+(m.done?"✓ 완료":"후속조치")+'</button>'
+          +'</div>'
+          +(m.content?'<div class="memo-content">'+esc(m.content).split("\n").join("<br>")+'</div>':"")
+          +'<div class="memo-actions">'
+            +(telDigits?'<a href="tel:'+telDigits+'" class="memo-act">📞 전화</a>':"")
+            +(telDigits?'<a href="sms:'+telDigits+'" class="memo-act">💬 문자</a>':"")
+            +'<button class="memo-act del" onclick="delMemo(&apos;'+m.id+'&apos;)">🗑 삭제</button>'
+          +'</div>'
+        +'</div>';
+      }).join("")+'</div>';
+
+  return '<div class="memo-wrap">'+form+search+listHtml+'</div>';
+}
+window.setMemoForm=function(f,v){S.memoForm[f]=v;};
+window.setMemoSearch=function(v){S.memoSearch=v;render();};
+window.onMemoTel=function(el){
+  var n=el.value.replace(/[^0-9]/g,"").slice(0,11);
+  var f=n;
+  if(n.length>=3&&n.length<7)f=n.slice(0,3)+"-"+n.slice(3);
+  else if(n.length>=7&&n.length<11)f=n.slice(0,3)+"-"+n.slice(3,6)+"-"+n.slice(6);
+  else if(n.length===11)f=n.slice(0,3)+"-"+n.slice(3,7)+"-"+n.slice(7);
+  el.value=f;S.memoForm.tel=f;
+};
+window.addMemo=function(){
+  var co=(S.memoForm.co||"").trim();
+  var content=(S.memoForm.content||"").trim();
+  if(!co&&!content){alert("상호명 또는 내용을 입력해주세요.");return;}
+  var mid=uid();
+  var memo={co:co,tel:S.memoForm.tel||"",content:content,done:false,createdAt:new Date().toISOString()};
+  S.memos=[].concat(S.memos||[],[Object.assign({id:mid},memo)]);
+  set(ref(db,"cashbook/memos/"+mid),memo).catch(function(e){alert("저장 실패: "+(e.message||e));});
+  S.memoForm={co:"",tel:"",content:""};
+  render();
+};
+window.toggleMemoDone=function(id){
+  var done=false;
+  S.memos=(S.memos||[]).map(function(m){if(m.id===id){done=!m.done;return Object.assign({},m,{done:done});}return m;});
+  set(ref(db,"cashbook/memos/"+id+"/done"),done).catch(function(){});
+  render();
+};
+window.delMemo=function(id){
+  if(!confirm("이 메모를 삭제하시겠습니까?"))return;
+  S.memos=(S.memos||[]).filter(function(m){return m.id!==id;});
+  set(ref(db,"cashbook/memos/"+id),null).catch(function(){});
+  render();
+};
 window.showViewLog=function(id){S.viewLogQid=id;S.modal="viewlog";render();};
 function renderViewLogModal(){
   var q=(S.quotes||[]).find(function(x){return x.id===S.viewLogQid;});
