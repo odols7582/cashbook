@@ -575,6 +575,17 @@ input.fiinput{display:none}
   .pmove-btn{width:26px;height:22px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:6px;font-size:10px;color:#4E5968;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
   .pmove-btn:hover:not(:disabled){background:#3182F6;color:#fff;border-color:#3182F6}
   .pmove-btn:disabled{opacity:.3;cursor:default}
+
+  /* ── 특약 항목 편집 ── */
+  .qspec-edit-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .qspec-edit-inp{flex:1;border:1px solid #D1D6DB;background:#fff;padding:9px 10px;font-size:13px;font-family:inherit;border-radius:8px;min-width:0}
+  .qspec-edit-inp:focus{outline:2px solid #3182F6;border-color:#3182F6}
+  .qspec-edit-del{width:32px;height:34px;background:#FFF0F0;color:#F04452;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-family:inherit;flex-shrink:0}
+  .qspec-edit-del:hover{background:#FFE0E0}
+  .qspec-add{width:100%;margin-top:6px;background:#EBF2FE;color:#3182F6;border:1px dashed #93BFFB;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:8px}
+  .qspec-add:hover{background:#DBE8FF}
+  .qspec-editbtn{background:#F2F4F6;color:#4E5968;border:none;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:999px}
+  .qspec-editbtn:hover{background:#E5E8EB}
 </style>
 </head>
 <body>
@@ -673,6 +684,11 @@ async function init(){
       if(v){
         S.quotes=Object.keys(v).map(function(k){return Object.assign({id:k},v[k]);});
       }else{S.quotes=[];}
+      render();
+    });
+    onValue(ref(db,"cashbook/specitems"),function(sn){
+      var v=sn.val();
+      if(v&&Array.isArray(v)&&v.length)SPEC_ITEMS=v.filter(Boolean);
       render();
     });
     setSbar("ok");
@@ -934,8 +950,10 @@ var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
 var ADJFORM={label:"",amount:"",sign:-1}; // 입력 중인 할인 폼 (sign: -1=할인, 1=추가)
 var QPRICE={}; // 견적별 일회성 가격 오버라이드 {id:{sell, monthly}}
 var QSPECIAL=""; // 특약사항 (자유입력)
-var QSPECPRE=[]; // 선택된 특약 항목 인덱스 배열
-var SPEC_ITEMS=["무상 A/S 1년 (단, 사용자 과실 수리는 수리비 부담)","포스용지 25롤 / 50롤 유상구매 (초기물품 무상지원)","폐업 및 양도양수 시 견적 장비 반납 및 후사업자 계약 이관","포스용지 무상지원"];
+var QSPECPRE=[]; // 선택된 특약 항목 텍스트 배열
+var SPEC_DEFAULT=["무상 A/S 1년 (단, 사용자 과실 수리는 수리비 부담)","포스용지 25롤 / 50롤 유상구매 (초기물품 무상지원)","폐업 및 양도양수 시 견적 장비 반납 및 후사업자 계약 이관","포스용지 무상지원"];
+var SPEC_ITEMS=SPEC_DEFAULT.slice();
+var specEditMode=false; // 특약 항목 편집 모드
 var QDOCS={A:false,B:false}; // 가맹서류 안내 선택 (A:개인, B:법인)
 var DOCS_A=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 공동대표 결제계좌 이용신청서"];
 var DOCS_B=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","법인인감증명서 (3개월 이내)","법인등기부등본 (3개월 이내)","주주명부 (3개월 이내)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 인감증명서, 공동대표 결제계좌 이용신청서"];
@@ -1186,7 +1204,15 @@ function renderQuote(){
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">📋 특약사항</span><span style="font-size:11px;color:#888">중복 선택 가능</span></div>'
       +'<div style="padding:6px 20px 18px">'
-        +SPEC_ITEMS.map(function(t,i){var on=QSPECPRE.indexOf(i)>=0;return '<label class="qspec-check '+(on?"on":"")+'" style="'+(i>0?"margin-top:6px":"")+'"><span class="qspec-box">'+(on?"✓":"")+'</span><span class="qspec-text">'+esc(t)+'</span><input type="checkbox" '+(on?"checked":"")+' onchange="toggleSpec('+i+')" style="display:none"></label>';}).join("")
+        +SPEC_ITEMS.map(function(t,i){
+            var on=QSPECPRE.indexOf(t)>=0;
+            if(specEditMode){
+              return '<div class="qspec-edit-row"><input class="qspec-edit-inp" value="'+esc(t)+'" oninput="updateSpecItem('+i+',this.value)"><button class="qspec-edit-del" onclick="delSpecItem('+i+')">×</button></div>';
+            }
+            return '<label class="qspec-check '+(on?"on":"")+'" style="'+(i>0?"margin-top:6px":"")+'"><span class="qspec-box">'+(on?"✓":"")+'</span><span class="qspec-text">'+esc(t)+'</span><input type="checkbox" '+(on?"checked":"")+' onchange="toggleSpec(&apos;'+encodeURIComponent(t)+'&apos;)" style="display:none"></label>';
+          }).join("")
+        +(specEditMode?'<button class="qspec-add" onclick="addSpecItem()">+ 항목 추가</button>':"")
+        +'<div style="text-align:right;margin-top:8px"><button class="qspec-editbtn" onclick="toggleSpecEdit()">'+(specEditMode?"✓ 편집 완료":"✏️ 항목 편집")+'</button></div>'
         +'<div class="qspec-divider">또는 직접 입력</div>'
         +'<textarea class="qspecial-input" id="qm-special" placeholder="추가 특약사항을 직접 입력하세요" oninput="setQSpecial(this.value)">'+esc(QSPECIAL)+'</textarea>'
       +'</div>'
@@ -1367,10 +1393,33 @@ function refreshQPanel(){
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.setQSpecial=function(v){QSPECIAL=v;};
-window.toggleSpec=function(i){
-  var idx=QSPECPRE.indexOf(i);
-  if(idx>=0)QSPECPRE.splice(idx,1);else QSPECPRE.push(i);
+window.toggleSpec=function(t){
+  t=decodeURIComponent(t);
+  var idx=QSPECPRE.indexOf(t);
+  if(idx>=0)QSPECPRE.splice(idx,1);else QSPECPRE.push(t);
   render();
+};
+window.toggleSpecEdit=function(){
+  specEditMode=!specEditMode;
+  if(!specEditMode){
+    // 편집 완료 시 빈 항목 제거 + 저장
+    SPEC_ITEMS=SPEC_ITEMS.map(function(t){return (t||"").trim();}).filter(Boolean);
+    fbSave("cashbook/specitems",SPEC_ITEMS);
+  }
+  render();
+};
+window.updateSpecItem=function(i,v){SPEC_ITEMS[i]=v;};
+window.delSpecItem=function(i){
+  if(!confirm("이 항목을 삭제하시겠습니까?"))return;
+  SPEC_ITEMS.splice(i,1);
+  fbSave("cashbook/specitems",SPEC_ITEMS);
+  render();
+};
+window.addSpecItem=function(){
+  SPEC_ITEMS.push("새 특약 항목");
+  render();
+  // 추가 후 마지막 입력칸 포커스
+  setTimeout(function(){var inps=document.querySelectorAll(".qspec-edit-inp");if(inps.length){var last=inps[inps.length-1];last.focus();last.select();}},50);
 };
 window.toggleQDocs=function(k){QDOCS[k]=!QDOCS[k];render();};
 window.setQSales=function(f,v){QSALES[f]=v;};
@@ -1433,7 +1482,7 @@ function collectQuoteData(){
     items:items,
     adjust:ADJUST.map(function(a){return{label:a.label,amount:Number(a.amount)||0};}),
     special:QSPECIAL,
-    specPre:QSPECPRE.map(function(i){return SPEC_ITEMS[i];}),
+    specPre:QSPECPRE.slice(),
     docs:{A:QDOCS.A,B:QDOCS.B},
     company:Object.assign({},COMPANY),
     date:new Date().toISOString().slice(0,10)
@@ -1494,6 +1543,7 @@ function buildQuoteHtml(d,opts){
   var dd=d.date?new Date(d.date):new Date();
   var dateStr=dd.getFullYear()+". "+String(dd.getMonth()+1).padStart(2,"0")+". "+String(dd.getDate()).padStart(2,"0");
   var hasSales=d.salesDept||d.salesRank||d.salesName||d.salesTel;
+  var telDigits=(d.salesTel||"").replace(/[^0-9]/g,"");
 
   var logoHtml=CO.logo?'<img src="'+CO.logo+'" style="width:42px;height:42px;object-fit:contain;border-radius:12px">':'<div style="width:42px;height:42px;background:#F2F4F6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8B95A1">로고</div>';
   var specLines=[];
@@ -1553,7 +1603,12 @@ function buildQuoteHtml(d,opts){
         +(d.salesDept?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">소속</span><span style="color:#4E5968;text-align:right">'+esc(d.salesDept)+'</span></div>':"")
         +(d.salesTel?'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px"><span style="color:#8B95A1">연락처</span><span style="color:#4E5968;text-align:right">'+esc(d.salesTel)+'</span></div>':"")
       +'</div>':"")
-    +'</div></div>'
+    +'</div>'
+    +((hasSales&&d.salesTel)?'<div style="display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid #F2F4F6">'
+      +'<a href="tel:'+esc(telDigits)+'" class="contact-btn" style="background:#EBF2FE;color:#3182F6">📞 전화</a>'
+      +'<a href="sms:'+esc(telDigits)+'" class="contact-btn" style="background:#E1F8F0;color:#15B886">💬 문자</a>'
+    +'</div>':"")
+    +'</div>'
     +'<div class="card" style="padding:18px 22px">'
       +'<div style="font-size:13px;font-weight:600;margin-bottom:4px">견적 상품</div>'
       +'<div>'+itemsHtml+'</div>'
@@ -1587,7 +1642,7 @@ function buildQuoteHtml(d,opts){
     +'*{margin:0;padding:0;box-sizing:border-box;font-family:\'Pretendard Variable\',Pretendard,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     +'body{background:#F2F4F6;padding:20px;color:#191F28}'
     +'.wrap{max-width:560px;margin:0 auto}'
-    +'.card{background:#fff;border-radius:16px;margin-bottom:10px}'
+    +'.card{background:#fff;border-radius:16px;margin-bottom:10px}'+'.contact-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 4px;border-radius:9px;font-size:12px;font-weight:700;text-decoration:none;border:none;transition:opacity .15s}'+'.contact-btn:active{opacity:.7}'
     +'@page{size:A4;margin:8mm}'
     +'@media print{body{background:#fff;padding:0}.wrap{max-width:100%}.card{border:1px solid #F2F4F6;break-inside:avoid;page-break-inside:avoid}.noprint{display:none!important}}'
     +'</style></head><body>'+body+'</body></html>';
