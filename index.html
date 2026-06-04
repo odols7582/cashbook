@@ -549,6 +549,26 @@ input.fiinput{display:none}
   .qprice-edit-won{font-size:12px;color:#8B95A1;flex-shrink:0}
   .qprice-reset{margin-top:8px;width:100%;background:#fff;color:#8B95A1;border:none;padding:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:8px}
   .qprice-reset:hover{background:#F2F4F6;color:#191F28}
+
+  /* ── 견적관리 ── */
+  .qmgr-filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:4px}
+  .qmgr-filters::-webkit-scrollbar{display:none}
+  .qmgr-fbtn{flex-shrink:0;background:#fff;border:none;padding:8px 14px;font-size:12px;font-weight:600;color:#8B95A1;cursor:pointer;font-family:inherit;border-radius:999px}
+  .qmgr-fbtn.on{background:#191F28;color:#fff}
+  .qmgr-list{display:flex;flex-direction:column;gap:10px}
+  .qmgr-card{background:#fff;border-radius:16px;padding:16px 18px}
+  .qmgr-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+  .qmgr-client{font-size:15px;font-weight:700;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qmgr-meta{font-size:11px;color:#8B95A1;margin-top:3px}
+  .qmgr-total{font-size:16px;font-weight:700;color:#191F28;font-variant-numeric:tabular-nums}
+  .qmgr-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:4px}
+  .qmgr-status-row{display:flex;gap:4px;padding:10px 0;border-top:1px solid #F2F4F6;border-bottom:1px solid #F2F4F6;margin-bottom:10px}
+  .qmgr-st-btn{flex:1;background:#F9FAFB;border:none;padding:7px 4px;font-size:11px;font-weight:600;color:#8B95A1;cursor:pointer;font-family:inherit;border-radius:8px;transition:all .15s}
+  .qmgr-actions{display:flex;gap:6px}
+  .qmgr-act{flex:1;background:#F2F4F6;border:none;padding:9px 4px;font-size:11px;font-weight:600;color:#4E5968;cursor:pointer;font-family:inherit;border-radius:8px}
+  .qmgr-act:hover{background:#E5E8EB}
+  .qmgr-act.del{background:#FFF0F0;color:#F04452}
+  .qmgr-act.del:hover{background:#FFE0E0}
 </style>
 </head>
 <body>
@@ -586,7 +606,7 @@ const KT=[[14.1,15.4,16.6,17.7,18.9,20.2,21.4,22.7,23.9,25.2,26.4,27.7,28.9,30.1
 
 const IV=[{id:uid(),date:"2026-04-02",deposit:505000,withdraw:null,category:"capital",taxInvoice:false,memo:"고정비 지출용"},{id:uid(),date:"2026-04-15",deposit:null,withdraw:4400,category:"fee",taxInvoice:false,memo:"하나은행 인증서"},{id:uid(),date:"2026-04-21",deposit:null,withdraw:9690,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:27740,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:88000,category:"fee",taxInvoice:false,memo:"범용인증서 / 1년"}];
 
-var S={tab:"ledger",rows:[],todos:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
+var S={tab:"ledger",rows:[],todos:[],quotes:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
 function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");window.__lastError="저장 실패 ("+path+"): "+(e&&e.message?e.message:e);console.error("[저장실패]",path,e);alert("⚠️ 저장 실패\n\n"+(e&&e.message?e.message:e)+"\n\n로그인/권한 문제일 수 있어요.");}},400);}
@@ -642,6 +662,13 @@ async function init(){
       window.__lastError="products 읽기 거부: "+(err&&err.message?err.message:err);
       alert("⚠️ 상품 데이터 읽기 거부\n\n"+(err&&err.message?err.message:err)+"\n\nFirebase 규칙/인증 확인이 필요해요.");
     });
+    onValue(ref(db,"cashbook/quotes"),function(sn){
+      var v=sn.val();
+      if(v){
+        S.quotes=Object.keys(v).map(function(k){return Object.assign({id:k},v[k]);});
+      }else{S.quotes=[];}
+      render();
+    });
     setSbar("ok");
   }catch(e){
     setSbar("err");
@@ -656,7 +683,7 @@ function render(){
   var root=document.getElementById("root");
   if(!root)return;
   var ac=S.todos.filter(function(t){return!t.done;}).length;
-  var tabs=[{id:"ledger",icon:"📒",label:"입출금장부"},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"todo",icon:"✓",label:"할일관리",badge:ac}];
+  var tabs=[{id:"ledger",icon:"📒",label:"입출금장부"},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"todo",icon:"✓",label:"할일관리",badge:ac}];
   var tabHtml=tabs.map(function(t){return'<button class="tabitem '+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')">'+t.icon+" "+t.label+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(\''+t.id+'\')"><span class="nbtn-icon">'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var body="";
@@ -664,6 +691,7 @@ function render(){
   else if(S.tab==="calc")body=renderCalc();
   else if(S.tab==="price")body=renderPrice();
   else if(S.tab==="quote")body=renderQuote();
+  else if(S.tab==="qmgr")body=renderQuotesMgr();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
@@ -1390,6 +1418,15 @@ function collectQuoteData(){
   };
 }
 
+// ── 견적 총액 계산 (목록 표시용) ──
+function quoteTotalOf(d){
+  var QM=d.mode,supply=0,monthly=0,adj=0;
+  (d.items||[]).forEach(function(p){supply+=QM==="sell"?p.sell*p.qty:0;monthly+=p.monthly*p.qty;});
+  (d.adjust||[]).forEach(function(a){adj+=Number(a.amount)||0;});
+  var base=QM==="sell"?supply:monthly;
+  return base+Math.round(base*0.1)+adj;
+}
+
 // ── 견적 데이터 → 견적서 HTML 문서 ──
 function buildQuoteHtml(d,opts){
   opts=opts||{};
@@ -1551,9 +1588,11 @@ window.shareQuote=async function(){
   if(!sel.length&&!ADJUST.length){alert("견적할 상품을 선택해주세요.");return;}
   var d=collectQuoteData();
   var qid=uid()+uid().slice(0,3);
+  // 합계 금액 미리 계산 (목록 표시용)
+  var qtotal=quoteTotalOf(d);
   try{
     setSbar("ing");
-    await set(ref(db,"cashbook/quotes/"+qid),{data:d,createdAt:new Date().toISOString()});
+    await set(ref(db,"cashbook/quotes/"+qid),{data:d,createdAt:new Date().toISOString(),status:"sent",total:qtotal,mode:d.mode,clientCo:d.clientCo});
     setSbar("ok");
     var base=window.location.origin+window.location.pathname;
     var url=base+"?q="+qid;
@@ -1598,6 +1637,79 @@ async function showSharedQuote(qid){
     root.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:10px;padding:20px;text-align:center"><div style="font-size:40px">⚠️</div><div style="font-size:16px;font-weight:700">불러오기 실패</div><div style="font-size:13px;color:#8B95A1">잠시 후 다시 시도해주세요.</div></div>';
   }
 }
+
+// ── 견적관리 탭 ──
+var QSTATUS={sent:{label:"발송",color:"#3182F6",bg:"#EBF2FE"},review:{label:"검토중",color:"#FF8A00",bg:"#FFF4E6"},done:{label:"계약완료",color:"#15B886",bg:"#E1F8F0"},cancel:{label:"취소",color:"#8B95A1",bg:"#F2F4F6"}};
+var QMGRFILTER="all";
+
+function renderQuotesMgr(){
+  var list=[].concat(S.quotes||[]).sort(function(a,b){return (b.createdAt||"").localeCompare(a.createdAt||"");});
+  var counts={all:list.length,sent:0,review:0,done:0,cancel:0};
+  list.forEach(function(q){var s=q.status||"sent";if(counts[s]!==undefined)counts[s]++;});
+  var filtered=QMGRFILTER==="all"?list:list.filter(function(q){return (q.status||"sent")===QMGRFILTER;});
+
+  var filterBtns='<div class="qmgr-filters">'
+    +'<button class="qmgr-fbtn '+(QMGRFILTER==="all"?"on":"")+'" onclick="setQMgrFilter(&apos;all&apos;)">전체 '+counts.all+'</button>'
+    +Object.keys(QSTATUS).map(function(k){return '<button class="qmgr-fbtn '+(QMGRFILTER===k?"on":"")+'" onclick="setQMgrFilter(&apos;'+k+'&apos;)">'+QSTATUS[k].label+' '+counts[k]+'</button>';}).join("")
+    +'</div>';
+
+  var cards=filtered.length===0
+    ? '<div class="epage"><div class="eicon">📭</div><h3>'+(QMGRFILTER==="all"?"발급한 견적서가 없어요":"해당 상태의 견적이 없어요")+'</h3><p>견적서 탭에서 링크를 발급하면 여기에 표시됩니다.</p></div>'
+    : '<div class="qmgr-list">'+filtered.map(function(q){
+        var st=QSTATUS[q.status||"sent"]||QSTATUS.sent;
+        var dt=q.createdAt?new Date(q.createdAt):null;
+        var dtStr=dt?(dt.getFullYear()+"."+String(dt.getMonth()+1).padStart(2,"0")+"."+String(dt.getDate()).padStart(2,"0")):"";
+        var qmode=q.mode||(q.data&&q.data.mode)||"sell";
+        var modeStr=qmode==="monthly"?"월 관리비":"판매";
+        return '<div class="qmgr-card">'
+          +'<div class="qmgr-card-top">'
+            +'<div style="min-width:0;flex:1">'
+              +'<div class="qmgr-client">'+esc(q.clientCo||"고객사")+'</div>'
+              +'<div class="qmgr-meta">'+dtStr+' · '+modeStr+' 견적</div>'
+            +'</div>'
+            +'<div style="text-align:right;flex-shrink:0">'
+              +'<div class="qmgr-total">'+fmtN(q.total||(q.data?quoteTotalOf(q.data):0))+'원</div>'
+              +'<span class="qmgr-badge" style="background:'+st.bg+';color:'+st.color+'">'+st.label+'</span>'
+            +'</div>'
+          +'</div>'
+          +'<div class="qmgr-status-row">'
+            +Object.keys(QSTATUS).map(function(k){return '<button class="qmgr-st-btn '+((q.status||"sent")===k?"on":"")+'" style="'+((q.status||"sent")===k?"background:"+QSTATUS[k].bg+";color:"+QSTATUS[k].color+";font-weight:700":"")+'" onclick="setQuoteStatus(&apos;'+q.id+'&apos;,&apos;'+k+'&apos;)">'+QSTATUS[k].label+'</button>';}).join("")
+          +'</div>'
+          +'<div class="qmgr-actions">'
+            +'<button class="qmgr-act" onclick="copyQuoteLink(&apos;'+q.id+'&apos;)">🔗 링크 복사</button>'
+            +'<button class="qmgr-act" onclick="viewQuoteLink(&apos;'+q.id+'&apos;)">👁 미리보기</button>'
+            +'<button class="qmgr-act del" onclick="delQuote(&apos;'+q.id+'&apos;)">🗑 삭제</button>'
+          +'</div>'
+        +'</div>';
+      }).join("")+'</div>';
+
+  return '<div class="box" style="margin-bottom:10px"><div class="box-head"><span class="box-title">📁 견적 발급 내역</span><span style="font-size:11px;color:#888">'+list.length+'건</span></div></div>'
+    +filterBtns
+    +cards;
+}
+window.setQMgrFilter=function(f){QMGRFILTER=f;render();};
+window.setQuoteStatus=function(id,st){
+  S.quotes=(S.quotes||[]).map(function(q){return q.id===id?Object.assign({},q,{status:st}):q;});
+  set(ref(db,"cashbook/quotes/"+id+"/status"),st).catch(function(e){alert("상태 변경 실패: "+(e.message||e));});
+  render();
+};
+window.copyQuoteLink=function(id){
+  var base=window.location.origin+window.location.pathname;
+  var url=base+"?q="+id;
+  navigator.clipboard.writeText(url).then(function(){alert("링크가 복사되었습니다.\n\n"+url);}).catch(function(){
+    S.shareUrl=url;S.shareClient="";S.modal="share";render();
+  });
+};
+window.viewQuoteLink=function(id){
+  var base=window.location.origin+window.location.pathname;
+  window.open(base+"?q="+id,"_blank");
+};
+window.delQuote=function(id){
+  if(!confirm("이 견적 발급 내역을 삭제하시겠습니까?\n(공유된 링크도 더 이상 열리지 않습니다)"))return;
+  S.quotes=(S.quotes||[]).filter(function(q){return q.id!==id;});
+  set(ref(db,"cashbook/quotes/"+id),null).catch(function(e){alert("삭제 실패: "+(e.message||e));});
+  render();
+};
 
 init();
 </script>
