@@ -586,6 +586,14 @@ input.fiinput{display:none}
   .qspec-add:hover{background:#DBE8FF}
   .qspec-editbtn{background:#F2F4F6;color:#4E5968;border:none;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:999px}
   .qspec-editbtn:hover{background:#E5E8EB}
+
+  /* ── 견적관리 설치일 ── */
+  .qmgr-install{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:10px;background:#E1F8F0;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;color:#15B886}
+  .qmgr-install:hover{background:#D0F2E5}
+  .qmgr-install-date{color:#0E9C72;font-weight:700}
+  .qmgr-elapsed{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:10px;background:#FFF4E6;border-radius:10px;font-size:12px;font-weight:600;color:#E68A00}
+  .qmgr-elapsed-val{color:#CC7A00;font-weight:700;font-size:13px}
+
 </style>
 </head>
 <body>
@@ -717,6 +725,7 @@ function render(){
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
+  if(S.modal==="install")body+=renderInstallModal();
   root.innerHTML=
     '<div class="topbar"><div class="topbar-inner">'
     +'<a class="logo"><div class="logo-icon">장</div><div><div class="logo-text">사업자장부</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
@@ -897,6 +906,16 @@ window.setTF=function(f){S.todo.filter=f;render();};
 
 /* ── 백업 ───────────────────── */
 window.openBackup=function(){S.modal="backup";render();};
+function renderInstallModal(){
+  var q=(S.quotes||[]).find(function(x){return x.id===S.installQid;});
+  var cli=q?(q.clientCo||"고객사"):"";
+  return '<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="max-width:380px"><div class="mhead"><h3>🔧 설치일 선택</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody">'
+    +'<div style="font-size:13px;color:#8B95A1;margin-bottom:14px">'+esc(cli)+' 설치 예정일을 선택하세요</div>'
+    +'<input type="date" id="install-date-input" class="qmeta-input" value="'+esc(S.installVal||"")+'" oninput="setInstallVal(this.value)" style="font-size:15px;padding:12px;text-align:center">'
+    +'<button class="btn-green" onclick="saveInstallDate()" style="width:100%;padding:12px;font-size:14px;margin-top:14px">✓ 설치일 저장</button>'
+    +(q&&q.installDate?'<button onclick="clearInstallDate()" style="width:100%;padding:10px;font-size:12px;margin-top:8px;background:#F2F4F6;color:#8B95A1;border:none;border-radius:10px;font-family:inherit;cursor:pointer">설치일 지우기</button>':"")
+    +'</div></div></div>';
+}
 function renderShareModal(){
   return '<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="max-width:440px"><div class="mhead"><h3>🔗 견적서 링크 공유</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody">'
     +'<div style="background:#EBF2FE;border-radius:12px;padding:16px;margin-bottom:14px;text-align:center">'
@@ -1749,6 +1768,15 @@ function renderQuotesMgr(){
               +'<span class="qmgr-badge" style="background:'+st.bg+';color:'+st.color+'">'+st.label+'</span>'
             +'</div>'
           +'</div>'
+          +((q.status==="done")?(function(){
+            var baseDate=q.installDate||q.doneAt;
+            var elapsed=elapsedLabel(baseDate);
+            return '<div class="qmgr-install" onclick="openInstallDate(&apos;'+q.id+'&apos;)">'
+              +'<span>🔧 설치일</span>'
+              +'<span class="qmgr-install-date">'+(q.installDate?fmtInstallDate(q.installDate):"날짜 선택 →")+'</span>'
+            +'</div>'
+            +(elapsed?'<div class="qmgr-elapsed"><span>⏱️ '+(q.installDate?"설치 후":"계약 후")+' 경과</span><span class="qmgr-elapsed-val">'+elapsed+'</span></div>':"");
+          })():"")
           +'<div class="qmgr-status-row">'
             +Object.keys(QSTATUS).map(function(k){return '<button class="qmgr-st-btn '+((q.status||"sent")===k?"on":"")+'" style="'+((q.status||"sent")===k?"background:"+QSTATUS[k].bg+";color:"+QSTATUS[k].color+";font-weight:700":"")+'" onclick="setQuoteStatus(&apos;'+q.id+'&apos;,&apos;'+k+'&apos;)">'+QSTATUS[k].label+'</button>';}).join("")
           +'</div>'
@@ -1766,9 +1794,68 @@ function renderQuotesMgr(){
 }
 window.setQMgrFilter=function(f){QMGRFILTER=f;render();};
 window.setQuoteStatus=function(id,st){
-  S.quotes=(S.quotes||[]).map(function(q){return q.id===id?Object.assign({},q,{status:st}):q;});
+  var patch={status:st};
+  // 계약완료로 처음 전환 시 완료 시점 기록
+  if(st==="done"){
+    var ex=(S.quotes||[]).find(function(x){return x.id===id;});
+    if(ex&&!ex.doneAt){patch.doneAt=new Date().toISOString();set(ref(db,"cashbook/quotes/"+id+"/doneAt"),patch.doneAt).catch(function(){});}
+  }
+  S.quotes=(S.quotes||[]).map(function(q){return q.id===id?Object.assign({},q,patch):q;});
   set(ref(db,"cashbook/quotes/"+id+"/status"),st).catch(function(e){alert("상태 변경 실패: "+(e.message||e));});
   render();
+  // 계약완료로 바꾸면 설치일 입력 모달 자동 표시 (아직 설치일 없을 때)
+  if(st==="done"){
+    var q=(S.quotes||[]).find(function(x){return x.id===id;});
+    if(q&&!q.installDate)openInstallDate(id);
+  }
+};
+// 경과 기간 계산 (기준일로부터 오늘까지) → "D+12일" 또는 "D+3개월 5일"
+function elapsedLabel(baseDate){
+  if(!baseDate)return "";
+  var base=new Date(baseDate);base.setHours(0,0,0,0);
+  var today=new Date();today.setHours(0,0,0,0);
+  var diffDays=Math.floor((today-base)/(1000*60*60*24));
+  if(diffDays<0)return "설치 예정 D"+diffDays; // 미래(설치 예정일이 아직 안 옴)
+  if(diffDays===0)return "D-DAY";
+  if(diffDays<30)return "D+"+diffDays+"일";
+  // 개월 + 잔여일 계산
+  var months=0,cur=new Date(base);
+  while(true){
+    var next=new Date(cur);next.setMonth(next.getMonth()+1);
+    if(next<=today){months++;cur=next;}else break;
+  }
+  var remDays=Math.floor((today-cur)/(1000*60*60*24));
+  if(months>=12){
+    var years=Math.floor(months/12),rm=months%12;
+    return "D+"+years+"년"+(rm>0?" "+rm+"개월":"");
+  }
+  return "D+"+months+"개월"+(remDays>0?" "+remDays+"일":"");
+}
+function fmtInstallDate(d){
+  if(!d)return "";
+  var dt=new Date(d);
+  var days=["일","월","화","수","목","금","토"];
+  return dt.getFullYear()+". "+String(dt.getMonth()+1).padStart(2,"0")+". "+String(dt.getDate()).padStart(2,"0")+". ("+days[dt.getDay()]+")";
+}
+window.openInstallDate=function(id){
+  S.installQid=id;
+  var q=(S.quotes||[]).find(function(x){return x.id===id;});
+  S.installVal=q&&q.installDate?q.installDate:new Date().toISOString().slice(0,10);
+  S.modal="install";render();
+  setTimeout(function(){var el=document.getElementById("install-date-input");if(el)el.focus();},50);
+};
+window.setInstallVal=function(v){S.installVal=v;};
+window.saveInstallDate=function(){
+  var id=S.installQid,v=S.installVal;
+  S.quotes=(S.quotes||[]).map(function(q){return q.id===id?Object.assign({},q,{installDate:v}):q;});
+  set(ref(db,"cashbook/quotes/"+id+"/installDate"),v).catch(function(e){alert("설치일 저장 실패: "+(e.message||e));});
+  S.modal=null;render();
+};
+window.clearInstallDate=function(){
+  var id=S.installQid;
+  S.quotes=(S.quotes||[]).map(function(q){return q.id===id?Object.assign({},q,{installDate:null}):q;});
+  set(ref(db,"cashbook/quotes/"+id+"/installDate"),null).catch(function(){});
+  S.modal=null;render();
 };
 window.copyQuoteLink=function(id){
   var base=window.location.origin+window.location.pathname;
