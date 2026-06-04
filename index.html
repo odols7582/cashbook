@@ -588,12 +588,35 @@ input.fiinput{display:none}
   .qspec-editbtn:hover{background:#E5E8EB}
 
   /* ── 견적관리 설치일 ── */
+
+  /* ── 견적 조회수 ── */
+  .qmgr-views{padding:10px 12px;margin-bottom:10px;background:#F9FAFB;border-radius:10px}
+  .qmgr-views-main{font-size:12px;font-weight:700}
+  .qmgr-views-sub{font-size:10px;color:#B0B8C1;margin-top:3px}
+  .qmgr-views-click{cursor:pointer}
+  .qmgr-views-click:hover{background:#EBF2FE}
   .qmgr-install{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:10px;background:#E1F8F0;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;color:#15B886}
   .qmgr-install:hover{background:#D0F2E5}
   .qmgr-install-date{color:#0E9C72;font-weight:700}
   .qmgr-elapsed{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:10px;background:#FFF4E6;border-radius:10px;font-size:12px;font-weight:600;color:#E68A00}
   .qmgr-elapsed-val{color:#CC7A00;font-weight:700;font-size:13px}
 
+
+  /* ── PIN 잠금 화면 ── */
+  .pin-gate{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F2F4F6;padding:20px}
+  .pin-box{width:100%;max-width:320px;text-align:center}
+  .pin-logo{font-size:40px;margin-bottom:16px}
+  .pin-title{font-size:20px;font-weight:700;color:#191F28;margin-bottom:6px}
+  .pin-sub{font-size:13px;color:#8B95A1;margin-bottom:28px;line-height:1.5}
+  .pin-dots{display:flex;justify-content:center;gap:16px;margin-bottom:14px}
+  .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #D1D6DB;transition:all .15s}
+  .pin-dot.filled{background:#3182F6;border-color:#3182F6}
+  .pin-err{font-size:12px;color:#F04452;font-weight:600;height:18px;margin-bottom:18px}
+  .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:280px;margin:0 auto}
+  .pin-key{height:64px;background:#fff;border:none;border-radius:16px;font-size:24px;font-weight:600;color:#191F28;cursor:pointer;font-family:inherit;transition:all .1s}
+  .pin-key:active{background:#E5E8EB;transform:scale(.95)}
+  .pin-del{background:transparent;font-size:22px;color:#8B95A1}
+  .pin-del:active{background:#E5E8EB}
 </style>
 </head>
 <body>
@@ -631,6 +654,12 @@ const KT=[[14.1,15.4,16.6,17.7,18.9,20.2,21.4,22.7,23.9,25.2,26.4,27.7,28.9,30.1
 
 const IV=[{id:uid(),date:"2026-04-02",deposit:505000,withdraw:null,category:"capital",taxInvoice:false,memo:"고정비 지출용"},{id:uid(),date:"2026-04-15",deposit:null,withdraw:4400,category:"fee",taxInvoice:false,memo:"하나은행 인증서"},{id:uid(),date:"2026-04-21",deposit:null,withdraw:9690,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:27740,category:"comm",taxInvoice:false,memo:"통신비"},{id:uid(),date:"2026-05-21",deposit:null,withdraw:88000,category:"fee",taxInvoice:false,memo:"범용인증서 / 1년"}];
 
+var PIN_OK=false; // 이번 세션 잠금 해제 여부
+var SAVED_PIN=null; // Firebase에 저장된 PIN
+var PIN_INPUT=""; // 입력 중인 PIN
+var PIN_SETUP=false; // 설정 모드
+var PIN_SETUP_FIRST=""; // 설정 시 1차 입력값
+var PIN_ERR=""; // 오류 메시지
 var S={tab:"ledger",rows:[],todos:[],quotes:[],calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
@@ -659,6 +688,19 @@ async function init(){
     if(rt)rt.innerHTML='<div class="loading"><div class="ltext" style="text-align:center;line-height:1.6">로그인에 실패했어요.<br>Firebase 콘솔에서 <b>익명 인증</b>이<br>활성화되어 있는지 확인해주세요.</div></div>';
     return;
   }
+  // PIN 잠금 확인 (세션당 1회)
+  if(!PIN_OK){
+    try{
+      var pinSnap=await get(ref(db,"cashbook/pin"));
+      SAVED_PIN=pinSnap.exists()?pinSnap.val():null;
+    }catch(e){SAVED_PIN=null;}
+    renderPinGate();
+    return; // PIN 통과 후 unlockApp()에서 loadAppData() 호출
+  }
+  await loadAppData();
+}
+// PIN 통과 후 실제 데이터 로드
+async function loadAppData(){
   try{
     var snap=await get(ref(db,"cashbook"));
     if(!snap.exists()){
@@ -726,10 +768,12 @@ function render(){
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
   if(S.modal==="install")body+=renderInstallModal();
+  if(S.modal==="viewlog")body+=renderViewLogModal();
   root.innerHTML=
     '<div class="topbar"><div class="topbar-inner">'
     +'<a class="logo"><div class="logo-icon">장</div><div><div class="logo-text">사업자장부</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
     +'<div id="spill" class="sync-pill ing"><div class="sdot"></div><span id="stxt">연결 중</span></div>'
+    +'<button class="btn-backup" onclick="changePin()" title="PIN 변경">🔒</button>'
     +'<button class="btn-backup" onclick="openBackup()">💾 백업</button>'
     +'</div></div>'
     +'<div class="tabnav"><div class="tabnav-inner">'+tabHtml+'</div></div>'
@@ -1766,6 +1810,22 @@ async function showSharedQuote(qid){
     }
     var rec=snap.val();
     var html=buildQuoteHtml(rec.data,{showShareBtns:true,status:rec.status,installDate:rec.installDate});
+    // 조회 기록 (미리보기 모드가 아닐 때만)
+    var isPreview=new URLSearchParams(window.location.search).get("preview")==="1";
+    if(!isPreview){
+      try{
+        var nowIso=new Date().toISOString();
+        var views=(rec.views||0)+1;
+        set(ref(db,"cashbook/quotes/"+qid+"/views"),views).catch(function(){});
+        set(ref(db,"cashbook/quotes/"+qid+"/lastView"),nowIso).catch(function(){});
+        if(!rec.firstView)set(ref(db,"cashbook/quotes/"+qid+"/firstView"),nowIso).catch(function(){});
+        // 열람 이력 타임라인 (최근 20개 유지)
+        var log=Array.isArray(rec.viewLog)?rec.viewLog.slice():[];
+        log.push(nowIso);
+        if(log.length>20)log=log.slice(log.length-20);
+        set(ref(db,"cashbook/quotes/"+qid+"/viewLog"),log).catch(function(){});
+      }catch(e){}
+    }
     document.open();
     document.write(html);
     document.close();
@@ -1796,7 +1856,7 @@ function renderQuotesMgr(){
     : '<div class="qmgr-list">'+filtered.map(function(q){
         var st=QSTATUS[normStatus(q.status)];
         var dt=q.createdAt?new Date(q.createdAt):null;
-        var dtStr=dt?(dt.getFullYear()+"."+String(dt.getMonth()+1).padStart(2,"0")+"."+String(dt.getDate()).padStart(2,"0")):"";
+        var dtStr=dt?(dt.getFullYear()+"."+String(dt.getMonth()+1).padStart(2,"0")+"."+String(dt.getDate()).padStart(2,"0")+" "+String(dt.getHours()).padStart(2,"0")+":"+String(dt.getMinutes()).padStart(2,"0")):"";
         var qmode=q.mode||(q.data&&q.data.mode)||"sell";
         var modeStr=qmode==="monthly"?"월 관리비":"판매";
         return '<div class="qmgr-card">'
@@ -1810,6 +1870,20 @@ function renderQuotesMgr(){
               +'<span class="qmgr-badge" style="background:'+st.bg+';color:'+st.color+'">'+st.label+'</span>'
             +'</div>'
           +'</div>'
+          +(function(){
+            var v=q.views||0;
+            var viewColor=v>0?"#15B886":"#B0B8C1";
+            var clickable=v>0?' qmgr-views-click" onclick="showViewLog(&apos;'+q.id+'&apos;)"':'"';
+            var info='<div class="qmgr-views'+clickable+'><div class="qmgr-views-main" style="color:'+viewColor+'">👁 '+(v>0?v+"회 열람":"아직 미열람")+(v>0?' <span style="font-size:10px;color:#B0B8C1;font-weight:500">이력 보기 ›</span>':"")+'</div>';
+            if(v>0){
+              info+='<div class="qmgr-views-sub">';
+              if(q.firstView)info+='최초 '+fmtViewTime(q.firstView);
+              if(q.firstView&&q.lastView&&q.lastView!==q.firstView)info+=' · 최근 '+fmtViewTime(q.lastView);
+              info+='</div>';
+            }
+            info+='</div>';
+            return info;
+          })()
           +((q.status==="done")?(function(){
             var baseDate=q.installDate||q.doneAt;
             var elapsed=elapsedLabel(baseDate);
@@ -1836,6 +1910,24 @@ function renderQuotesMgr(){
     +cards;
 }
 window.setQMgrFilter=function(f){QMGRFILTER=f;render();};
+window.showViewLog=function(id){S.viewLogQid=id;S.modal="viewlog";render();};
+function renderViewLogModal(){
+  var q=(S.quotes||[]).find(function(x){return x.id===S.viewLogQid;});
+  if(!q)return "";
+  var log=Array.isArray(q.viewLog)?q.viewLog.slice().reverse():[];
+  var rows=log.length?log.map(function(iso,i){
+    var d=new Date(iso);
+    var ds=(d.getFullYear())+". "+String(d.getMonth()+1).padStart(2,"0")+". "+String(d.getDate()).padStart(2,"0")+". "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F2F4F6"><span style="font-size:13px;color:#191F28">👁 '+ds+'</span><span style="font-size:11px;color:#8B95A1">'+fmtViewTime(iso)+'</span></div>';
+  }).join(""):'<div style="text-align:center;color:#8B95A1;font-size:13px;padding:20px 0">열람 이력이 없어요</div>';
+  var note=(q.views||0)>20?'<div style="font-size:11px;color:#B0B8C1;text-align:center;margin-top:10px">최근 20회만 표시 (총 '+q.views+'회 열람)</div>':"";
+  return '<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="max-width:400px"><div class="mhead"><h3>👁 열람 이력</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody">'
+    +'<div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:4px">'+esc(q.clientCo||"고객사")+'</div>'
+    +'<div style="font-size:12px;color:#15B886;font-weight:600;margin-bottom:14px">총 '+(q.views||0)+'회 열람</div>'
+    +'<div style="max-height:50vh;overflow-y:auto">'+rows+'</div>'
+    +note
+    +'</div></div></div>';
+}
 window.setQuoteStatus=function(id,st){
   var patch={status:st};
   // 계약완료로 처음 전환 시 완료 시점 기록
@@ -1874,6 +1966,16 @@ function elapsedLabel(baseDate){
   }
   return "D+"+months+"개월"+(remDays>0?" "+remDays+"일":"");
 }
+function fmtViewTime(iso){
+  if(!iso)return "";
+  var d=new Date(iso),now=new Date();
+  var diffMs=now-d,diffMin=Math.floor(diffMs/60000),diffH=Math.floor(diffMs/3600000),diffD=Math.floor(diffMs/86400000);
+  if(diffMin<1)return "방금 전";
+  if(diffMin<60)return diffMin+"분 전";
+  if(diffH<24)return diffH+"시간 전";
+  if(diffD<7)return diffD+"일 전";
+  return (d.getMonth()+1)+"."+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
 function fmtInstallDate(d){
   if(!d)return "";
   var dt=new Date(d);
@@ -1909,7 +2011,7 @@ window.copyQuoteLink=function(id){
 };
 window.viewQuoteLink=function(id){
   var base=window.location.origin+window.location.pathname;
-  window.open(base+"?q="+id,"_blank");
+  window.open(base+"?q="+id+"&preview=1","_blank");
 };
 var EDIT_QID=null; // 수정 중인 견적 ID (null이면 신규)
 window.editQuote=function(id){
@@ -1948,6 +2050,79 @@ window.delQuote=function(id){
   S.quotes=(S.quotes||[]).filter(function(q){return q.id!==id;});
   set(ref(db,"cashbook/quotes/"+id),null).catch(function(e){alert("삭제 실패: "+(e.message||e));});
   render();
+};
+
+// ── PIN 잠금 화면 ──
+function renderPinGate(){
+  var root=document.getElementById("root");
+  var isSetup=!SAVED_PIN; // 저장된 PIN 없으면 최초 설정 모드
+  var title,sub;
+  if(isSetup){
+    if(!PIN_SETUP_FIRST){title="새 PIN 설정";sub="장부 잠금에 사용할 4자리 PIN을 입력하세요";}
+    else{title="PIN 확인";sub="같은 PIN을 한 번 더 입력하세요";}
+  }else{
+    title="PIN 입력";sub="장부를 열려면 4자리 PIN을 입력하세요";
+  }
+  var dots="";
+  for(var i=0;i<4;i++){dots+='<div class="pin-dot '+(i<PIN_INPUT.length?"filled":"")+'"></div>';}
+  var keys=["1","2","3","4","5","6","7","8","9","","0","del"];
+  var pad=keys.map(function(k){
+    if(k==="")return '<div></div>';
+    if(k==="del")return '<button class="pin-key pin-del" onclick="pinDel()">⌫</button>';
+    return '<button class="pin-key" onclick="pinPress(&apos;'+k+'&apos;)">'+k+'</button>';
+  }).join("");
+  root.innerHTML='<div class="pin-gate">'
+    +'<div class="pin-box">'
+      +'<div class="pin-logo">🔒</div>'
+      +'<div class="pin-title">'+title+'</div>'
+      +'<div class="pin-sub">'+sub+'</div>'
+      +'<div class="pin-dots">'+dots+'</div>'
+      +(PIN_ERR?'<div class="pin-err">'+PIN_ERR+'</div>':'<div class="pin-err"></div>')
+      +'<div class="pin-pad">'+pad+'</div>'
+    +'</div>'
+  +'</div>';
+}
+window.pinPress=function(n){
+  if(PIN_INPUT.length>=4)return;
+  PIN_INPUT+=n;PIN_ERR="";
+  renderPinGate();
+  if(PIN_INPUT.length===4)setTimeout(pinComplete,150);
+};
+window.pinDel=function(){PIN_INPUT=PIN_INPUT.slice(0,-1);PIN_ERR="";renderPinGate();};
+function pinComplete(){
+  var isSetup=!SAVED_PIN;
+  if(isSetup){
+    if(!PIN_SETUP_FIRST){
+      PIN_SETUP_FIRST=PIN_INPUT;PIN_INPUT="";renderPinGate();
+    }else{
+      if(PIN_INPUT===PIN_SETUP_FIRST){
+        // PIN 저장
+        set(ref(db,"cashbook/pin"),PIN_INPUT).then(function(){
+          SAVED_PIN=PIN_INPUT;PIN_OK=true;PIN_INPUT="";PIN_SETUP_FIRST="";
+          unlockApp();
+        }).catch(function(e){PIN_ERR="저장 실패: "+(e.message||e);PIN_INPUT="";PIN_SETUP_FIRST="";renderPinGate();});
+      }else{
+        PIN_ERR="PIN이 일치하지 않아요. 다시 설정해주세요.";PIN_INPUT="";PIN_SETUP_FIRST="";renderPinGate();
+      }
+    }
+  }else{
+    if(PIN_INPUT===String(SAVED_PIN)){
+      PIN_OK=true;PIN_INPUT="";unlockApp();
+    }else{
+      PIN_ERR="PIN이 올바르지 않아요.";PIN_INPUT="";renderPinGate();
+    }
+  }
+}
+function unlockApp(){
+  var root=document.getElementById("root");
+  root.innerHTML='<div class="loading"><div class="spinner"></div><div class="ltext">불러오는 중…</div></div>';
+  loadAppData();
+}
+// PIN 변경 (설정 등에서 호출 가능)
+window.changePin=function(){
+  if(!confirm("PIN을 변경하시겠어요?\n새 PIN을 설정하는 화면으로 이동합니다."))return;
+  SAVED_PIN=null;PIN_OK=false;PIN_INPUT="";PIN_SETUP_FIRST="";PIN_ERR="";
+  renderPinGate();
 };
 
 init();
