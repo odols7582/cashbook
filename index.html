@@ -214,7 +214,8 @@ input.fiinput{display:none}
 
 @media(max-width:768px){
   .main{padding:110px 0 70px}
-  .kpi-grid{grid-template-columns:1fr 1fr}
+  .qmgr-wrap{padding:0 14px}
+  .kpi-grid{grid-template-columns:1fr 1fr;padding:0 14px}
   .result-grid{grid-template-columns:1fr}
   .tabnav-inner{padding:0 8px}
   .tabitem{padding:0 12px;font-size:13px}
@@ -551,6 +552,7 @@ input.fiinput{display:none}
   .qprice-reset:hover{background:#F2F4F6;color:#191F28}
 
   /* ── 견적관리 ── */
+  .qmgr-wrap{padding:0}
   .qmgr-filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:4px}
   .qmgr-filters::-webkit-scrollbar{display:none}
   .qmgr-fbtn{flex-shrink:0;background:#fff;border:none;padding:8px 14px;font-size:12px;font-weight:600;color:#8B95A1;cursor:pointer;font-family:inherit;border-radius:999px}
@@ -1905,9 +1907,9 @@ function renderQuotesMgr(){
         +'</div>';
       }).join("")+'</div>';
 
-  return '<div class="box" style="margin-bottom:10px"><div class="box-head"><span class="box-title">📁 견적 발급 내역</span><span style="font-size:11px;color:#888">'+list.length+'건</span></div></div>'
+  return '<div class="qmgr-wrap">'+'<div class="box" style="margin-bottom:10px"><div class="box-head"><span class="box-title">📁 견적 발급 내역</span><span style="font-size:11px;color:#888">'+list.length+'건</span></div></div>'
     +filterBtns
-    +cards;
+    +cards+'</div>';
 }
 window.setQMgrFilter=function(f){QMGRFILTER=f;render();};
 window.showViewLog=function(id){S.viewLogQid=id;S.modal="viewlog";render();};
