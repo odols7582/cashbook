@@ -224,6 +224,7 @@ input.fiinput{display:none}
   .main{padding:110px 0 70px}
   .qmgr-wrap{padding:0 14px}
   .memo-wrap{padding:0 14px}
+  .photo-wrap{padding:0 14px}
   .kpi-grid{grid-template-columns:1fr 1fr;padding:0 14px}
   .result-grid{grid-template-columns:1fr}
   .tabnav-inner{padding:0 8px}
@@ -651,6 +652,35 @@ input.fiinput{display:none}
   .memo-act{flex:1;text-align:center;background:#F2F4F6;color:#4E5968;border:none;padding:9px 4px;font-size:12px;font-weight:600;border-radius:9px;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:3px}
   .memo-act:hover{background:#E5E8EB}
   .memo-act.del{background:#FFF0F0;color:#F04452}
+
+  /* ── 사진보관 ── */
+  .photo-wrap{padding:0}
+  .photo-cats{display:flex;gap:6px;flex-wrap:wrap}
+  .photo-cat-btn{background:#F2F4F6;border:none;padding:8px 14px;font-size:12px;font-weight:600;color:#8B95A1;cursor:pointer;font-family:inherit;border-radius:999px}
+  .photo-cat-btn.on{background:#3182F6;color:#fff}
+  .photo-folders{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .photo-folder{cursor:pointer}
+  .photo-folder-thumb{position:relative;width:100%;aspect-ratio:1;background:#fff;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px}
+  .photo-folder-thumb img{width:100%;height:100%;object-fit:cover}
+  .photo-folder-count{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .photo-folder-name{font-size:12px;font-weight:600;color:#191F28;margin-top:6px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .photo-add-btn{flex-shrink:0;background:#3182F6;color:#fff;border:none;padding:9px 14px;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer;font-family:inherit}
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .photo-item{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer;background:#fff}
+  .photo-item img{width:100%;height:100%;object-fit:cover}
+  .photo-cat-tag{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;font-weight:600;padding:2px 6px;border-radius:6px}
+  .photo-del{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(240,68,82,.9);color:#fff;border:none;border-radius:50%;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1}
+
+  /* ── 폴더 비고/견적연결 ── */
+  .folder-note-view{font-size:13px;color:#4E5968;line-height:1.6;background:#F9FAFB;border-radius:10px;padding:12px 14px;cursor:pointer;min-height:44px}
+  .folder-note-view:hover{background:#F2F4F6}
+  .folder-link-btn{background:#EBF2FE;color:#3182F6;border:none;padding:6px 12px;font-size:11px;font-weight:700;border-radius:999px;cursor:pointer;font-family:inherit}
+  .folder-quote{display:flex;align-items:center;gap:4px;background:#F9FAFB;border-radius:10px;padding:10px 12px;margin-bottom:6px}
+  .folder-q-view{background:#3182F6;color:#fff;border:none;padding:5px 10px;font-size:11px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;flex-shrink:0}
+  .folder-q-unlink{background:#FFF0F0;color:#F04452;border:none;width:24px;height:24px;font-size:13px;border-radius:8px;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:4px}
+  .link-q-row{display:flex;align-items:center;gap:8px;background:#F9FAFB;border-radius:10px;padding:12px 14px;cursor:pointer;transition:background .15s}
+  .link-q-row:hover:not(.linked){background:#EBF2FE}
+  .link-q-row.linked{opacity:.6;cursor:default}
 </style>
 </head>
 <body>
@@ -694,7 +724,7 @@ var PIN_INPUT=""; // 입력 중인 PIN
 var PIN_SETUP=false; // 설정 모드
 var PIN_SETUP_FIRST=""; // 설정 시 1차 입력값
 var PIN_ERR=""; // 오류 메시지
-var S={tab:"price",rows:[],todos:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
+var S={tab:"price",rows:[],todos:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},photos:[],photoSearch:"",photoOpenCo:null,photoUploadCo:"",photoCat:"설치현장",folders:{},folderNoteEdit:false,calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
 function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");window.__lastError="저장 실패 ("+path+"): "+(e&&e.message?e.message:e);console.error("[저장실패]",path,e);alert("⚠️ 저장 실패\n\n"+(e&&e.message?e.message:e)+"\n\n로그인/권한 문제일 수 있어요.");}},400);}
@@ -780,6 +810,15 @@ async function loadAppData(){
       if(v){S.memos=Object.keys(v).map(function(k){return Object.assign({id:k},v[k]);});}else{S.memos=[];}
       render();
     });
+    onValue(ref(db,"cashbook/photos"),function(sn){
+      var v=sn.val();
+      if(v){S.photos=Object.keys(v).map(function(k){return Object.assign({id:k},v[k]);});}else{S.photos=[];}
+      render();
+    });
+    onValue(ref(db,"cashbook/folders"),function(sn){
+      S.folders=sn.val()||{};
+      render();
+    });
     setSbar("ok");
   }catch(e){
     setSbar("err");
@@ -794,7 +833,7 @@ function render(){
   var root=document.getElementById("root");
   if(!root)return;
   var ac=S.todos.filter(function(t){return!t.done;}).length;
-  var tabs=[{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"memo",icon:"📝",label:"영업메모"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
+  var tabs=[{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"memo",icon:"📝",label:"영업메모"},{id:"photo",icon:"📷",label:"사진보관"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
   var tabHtml=tabs.map(function(t){return'<button class="tabitem '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)">'+t.icon+" "+t.label+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)"><span class="nbtn-icon">'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var body="";
@@ -804,11 +843,13 @@ function render(){
   else if(S.tab==="quote")body=renderQuote();
   else if(S.tab==="qmgr")body=renderQuotesMgr();
   else if(S.tab==="memo")body=renderMemos();
+  else if(S.tab==="photo")body=renderPhotos();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
   if(S.modal==="install")body+=renderInstallModal();
   if(S.modal==="viewlog")body+=renderViewLogModal();
+  if(S.modal==="linkquote")body+=renderLinkQuoteModal();
   root.innerHTML=
     '<div class="topbar"><div class="topbar-inner">'
     +'<a class="logo"><div class="logo-icon">'+(COMPANY.logo?'<img src="'+COMPANY.logo+'" style="width:100%;height:100%;object-fit:contain;border-radius:8px">':'장')+'</div><div><div class="logo-text">영업관리</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
@@ -1058,6 +1099,7 @@ var SPEC_DEFAULT=["무상 A/S 1년 (단, 사용자 과실 수리는 수리비 �
 var SPEC_ITEMS=SPEC_DEFAULT.slice();
 var specEditMode=false; // 특약 항목 편집 모드
 var QDOCS={A:false,B:false}; // 가맹서류 안내 선택 (A:개인, B:법인)
+var QDOCS_EXTRA=""; // 업종별 추가/보완 서류 수기입력
 var DOCS_A=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 공동대표 결제계좌 이용신청서"];
 var DOCS_B=["사업자등록증","대표자 신분증","통장사본","업종별 허가증(요식·통신판매·병원·학원 등)","법인인감증명서 (3개월 이내)","법인등기부등본 (3개월 이내)","주주명부 (3개월 이내)","매장 외부사진 2장 (간판 미설치 시 도로명주소 첨부)","매장 내부사진 2장 (업종 확인 가능한 사진)","사업장 대표 번호","사업자 대표자 번호(본인명의)","이메일주소","공동대표일 경우, 공동대표인 신분증 및 인감증명서, 공동대표 결제계좌 이용신청서"];
 var QSALES={dept:"",rank:"",name:"",tel:""}; // 영업자 정보
@@ -1336,6 +1378,8 @@ function renderQuote(){
           +'<input type="checkbox" '+(QDOCS.B?"checked":"")+' onchange="toggleQDocs(&apos;B&apos;)" style="display:none">'
         +'</label>'
         +((QDOCS.A||QDOCS.B)?'<div class="qdoc-hint">✓ 선택한 서류 안내가 견적서 하단에 표기됩니다</div>':"")
+        +'<div style="font-size:11px;color:#8B95A1;margin:16px 0 6px;font-weight:600">📝 업종별 추가 / 보완 서류 (수기 입력)</div>'
+        +'<textarea class="qspecial-input" id="qm-docsextra" placeholder="업종에 따라 추가로 필요한 서류를 입력하세요\n예) 통신판매업 신고증, 의료기기 판매 신고증 등" oninput="setQDocsExtra(this.value)">'+esc(QDOCS_EXTRA)+'</textarea>'
       +'</div>'
     +'</div>'
 
@@ -1526,6 +1570,7 @@ window.addSpecItem=function(){
   setTimeout(function(){var inps=document.querySelectorAll(".qspec-edit-inp");if(inps.length){var last=inps[inps.length-1];last.focus();last.select();}},50);
 };
 window.toggleQDocs=function(k){QDOCS[k]=!QDOCS[k];render();};
+window.setQDocsExtra=function(v){QDOCS_EXTRA=v;};
 window.setQSales=function(f,v){QSALES[f]=v;};
 window.setQClient=function(f,v){QCLIENT[f]=v;};
 // 전화번호 하이픈 자동 포맷
@@ -1551,7 +1596,7 @@ window.onTelInput=function(el,target){
   else if(target==="sales")QSALES.tel=formatted;
 };
 window.resetQ=function(){
-  ADJUST=[];QPRICE={};QSPECIAL="";QSPECPRE=[];QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};ADJFORM={label:"",amount:"",sign:-1};EDIT_QID=null;
+  ADJUST=[];QPRICE={};QSPECIAL="";QSPECPRE=[];QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};QDOCS_EXTRA="";ADJFORM={label:"",amount:"",sign:-1};EDIT_QID=null;
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
@@ -1588,6 +1633,7 @@ function collectQuoteData(){
     special:QSPECIAL,
     specPre:QSPECPRE.slice(),
     docs:{A:QDOCS.A,B:QDOCS.B},
+    docsExtra:QDOCS_EXTRA,
     company:Object.assign({},COMPANY),
     date:new Date().toISOString().slice(0,10)
   };
@@ -1664,18 +1710,25 @@ function buildQuoteHtml(d,opts){
   // 가맹서류 안내
   var docsHtml="";
   var dc=d.docs||{};
-  if(dc.A||dc.B){
+  var docsExtra=(d.docsExtra||"").trim();
+  if(dc.A||dc.B||docsExtra){
     var docsBody="";
     if(dc.A){
-      docsBody+='<div style="margin-bottom:'+(dc.B?"16px":"0")+'">'
+      docsBody+='<div style="margin-bottom:'+((dc.B||docsExtra)?"16px":"0")+'">'
         +'<div style="font-size:12px;font-weight:700;color:#3182F6;margin-bottom:8px">A. 개인사업자 신규가맹</div>'
         +'<ol style="margin:0;padding-left:18px;font-size:11px;color:#4E5968;line-height:1.9">'+DOCS_A.map(function(t){return "<li>"+esc(t)+"</li>";}).join("")+'</ol>'
       +'</div>';
     }
     if(dc.B){
-      docsBody+='<div>'
+      docsBody+='<div style="margin-bottom:'+(docsExtra?"16px":"0")+'">'
         +'<div style="font-size:12px;font-weight:700;color:#3182F6;margin-bottom:8px">B. 법인사업자 신규가맹</div>'
         +'<ol style="margin:0;padding-left:18px;font-size:11px;color:#4E5968;line-height:1.9">'+DOCS_B.map(function(t){return "<li>"+esc(t)+"</li>";}).join("")+'</ol>'
+      +'</div>';
+    }
+    if(docsExtra){
+      docsBody+='<div style="background:#FFF8E6;border-radius:10px;padding:12px 14px">'
+        +'<div style="font-size:12px;font-weight:700;color:#E68A00;margin-bottom:6px">📝 업종별 추가 / 보완 서류</div>'
+        +'<div style="font-size:11px;color:#4E5968;line-height:1.8">'+esc(docsExtra).split("\n").join("<br>")+'</div>'
       +'</div>';
     }
     docsHtml='<div class="card" style="padding:18px 22px;margin-bottom:10px">'
@@ -2028,7 +2081,215 @@ window.delMemo=function(id){
   set(ref(db,"cashbook/memos/"+id),null).catch(function(){});
   render();
 };
+
+// ── 사진보관 탭 ──
+var PHOTO_CATS=["가맹서류","장비/제품","설치현장","기타"];
+function renderPhotos(){
+  var q=(S.photoSearch||"").trim().toLowerCase();
+  var groups={};
+  (S.photos||[]).forEach(function(p){
+    var co=p.co||"(미분류)";
+    if(!groups[co])groups[co]=[];
+    groups[co].push(p);
+  });
+  var coList=Object.keys(groups).sort();
+  if(q)coList=coList.filter(function(co){return co.toLowerCase().indexOf(q)>=0;});
+
+  if(S.photoOpenCo&&groups[S.photoOpenCo]){
+    var photos=groups[S.photoOpenCo].slice().sort(function(a,b){return (b.createdAt||"").localeCompare(a.createdAt||"");});
+    var grid=photos.map(function(p){
+      return '<div class="photo-item" onclick="viewPhoto(&apos;'+p.id+'&apos;)">'
+        +'<img src="'+p.img+'" alt="">'
+        +'<span class="photo-cat-tag">'+esc(p.cat||"")+'</span>'
+        +'<button class="photo-del" onclick="event.stopPropagation();delPhoto(&apos;'+p.id+'&apos;)">×</button>'
+      +'</div>';
+    }).join("");
+    return '<div class="photo-wrap">'
+      +'<div class="box" style="margin-bottom:14px"><div style="padding:16px 20px;display:flex;align-items:center;gap:10px">'
+        +'<button onclick="closePhotoFolder()" style="background:#F2F4F6;border:none;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;font-family:inherit">←</button>'
+        +'<div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📁 '+esc(S.photoOpenCo)+'</div><div style="font-size:11px;color:#8B95A1">사진 '+photos.length+'장</div></div>'
+        +'<label class="photo-add-btn">+ 추가<input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotos(this,&apos;'+encodeURIComponent(S.photoOpenCo)+'&apos;)"></label>'
+      +'</div></div>'
+      +renderFolderInfo(S.photoOpenCo)
+      +'<div class="photo-grid">'+(photos.length?grid:'<div style="grid-column:1/-1;text-align:center;color:#8B95A1;font-size:13px;padding:30px 0">사진이 없어요. + 추가 버튼으로 올려보세요.</div>')+'</div>'
+    +'</div>';
+  }
+
+  var catBtns=PHOTO_CATS.map(function(cat){return '<button class="photo-cat-btn '+(S.photoCat===cat?"on":"")+'" onclick="setPhotoCat(&apos;'+cat+'&apos;)">'+cat+'</button>';}).join("");
+  var form='<div class="box" style="margin-bottom:14px"><div class="box-head"><span class="box-title">📷 사진 업로드</span></div>'
+    +'<div style="padding:6px 20px 18px">'
+      +'<input class="memo-inp" id="photo-co" placeholder="상호명" value="'+esc(S.photoUploadCo)+'" oninput="S.photoUploadCo=this.value">'
+      +'<div style="font-size:11px;color:#8B95A1;margin:12px 0 6px">사진 종류</div>'
+      +'<div class="photo-cats">'+catBtns+'</div>'
+      +'<label class="btn-green" style="display:flex;align-items:center;justify-content:center;width:100%;padding:12px;font-size:14px;margin-top:12px;cursor:pointer">📷 사진 선택 (여러 장 가능)<input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotosNew(this)"></label>'
+    +'</div></div>';
+
+  var search='<div style="margin-bottom:14px"><div class="memo-search"><span style="font-size:14px">🔍</span><input placeholder="상호명으로 검색" value="'+esc(S.photoSearch)+'" oninput="setPhotoSearch(this.value)"></div></div>';
+
+  var folders=coList.length===0
+    ? '<div class="epage"><div class="eicon">📷</div><h3>'+(q?"검색 결과가 없어요":"보관된 사진이 없어요")+'</h3><p>위에서 상호명과 사진을 올려보세요</p></div>'
+    : '<div class="photo-folders">'+coList.map(function(co){
+        var ps=groups[co];
+        var thumb=ps[0]?ps[0].img:"";
+        return '<div class="photo-folder" onclick="openPhotoFolder(&apos;'+encodeURIComponent(co)+'&apos;)">'
+          +'<div class="photo-folder-thumb">'+(thumb?'<img src="'+thumb+'">':'📁')+'<span class="photo-folder-count">'+ps.length+'</span></div>'
+          +'<div class="photo-folder-name">'+esc(co)+'</div>'
+        +'</div>';
+      }).join("")+'</div>';
+
+  return '<div class="photo-wrap">'+form+search+folders+'</div>';
+}
+// 폴더 키 안전 변환 (Firebase 키로 쓸 수 없는 문자 인코딩)
+function folderKey(co){return encodeURIComponent(co).replace(/[.#$\[\]\/]/g,function(ch){return "%"+ch.charCodeAt(0).toString(16);});}
+function getFolder(co){var k=folderKey(co);return (S.folders&&S.folders[k])||{};}
+// 폴더 비고 + 견적 연결 영역
+function renderFolderInfo(co){
+  var f=getFolder(co);
+  var note=f.note||"";
+  // 연결된 견적
+  var linkedQuotes=(f.quotes||[]).map(function(qid){
+    var q=(S.quotes||[]).find(function(x){return x.id===qid;});
+    if(!q)return "";
+    var st=QSTATUS[normStatus(q.status)];
+    return '<div class="folder-quote">'
+      +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+fmtN(q.total||0)+'원 · '+(q.mode==="monthly"?"월관리비":"판매")+'</div><div style="font-size:10px;color:#8B95A1">'+esc(q.clientCo||"")+'</div></div>'
+      +'<span class="qmgr-badge" style="background:'+st.bg+';color:'+st.color+';margin-right:6px">'+st.label+'</span>'
+      +'<button class="folder-q-view" onclick="viewQuoteLink(&apos;'+qid+'&apos;)">보기</button>'
+      +'<button class="folder-q-unlink" onclick="unlinkQuote(&apos;'+encodeURIComponent(co)+'&apos;,&apos;'+qid+'&apos;)">×</button>'
+    +'</div>';
+  }).join("");
+
+  var noteBlock=S.folderNoteEdit
+    ? '<textarea class="memo-inp memo-textarea" id="folder-note-input" placeholder="비고 (메모) 입력">'+esc(note)+'</textarea>'
+      +'<button class="btn-green" onclick="saveFolderNote(&apos;'+encodeURIComponent(co)+'&apos;)" style="width:100%;padding:10px;font-size:13px;margin-top:8px">저장</button>'
+    : '<div class="folder-note-view" onclick="editFolderNote()">'+(note?esc(note).split("\n").join("<br>"):'<span style="color:#B0B8C1">비고를 입력하려면 탭하세요</span>')+'</div>';
+
+  return '<div class="box" style="margin-bottom:14px"><div style="padding:16px 20px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:13px;font-weight:700;color:#191F28">📌 비고</span>'+(S.folderNoteEdit?"":'<span style="font-size:11px;color:#8B95A1">탭하여 편집</span>')+'</div>'
+    +noteBlock
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px"><span style="font-size:13px;font-weight:700;color:#191F28">🔗 연결된 견적서</span><button class="folder-link-btn" onclick="openLinkQuote(&apos;'+encodeURIComponent(co)+'&apos;)">+ 견적 연결</button></div>'
+    +(linkedQuotes||'<div style="font-size:12px;color:#B0B8C1;text-align:center;padding:10px 0">연결된 견적서가 없어요</div>')
+  +'</div></div>';
+}
+window.editFolderNote=function(){S.folderNoteEdit=true;render();};
+window.saveFolderNote=function(co){
+  co=decodeURIComponent(co);
+  var el=document.getElementById("folder-note-input");
+  var note=el?el.value:"";
+  var k=folderKey(co);
+  var f=Object.assign({},getFolder(co),{note:note});
+  if(!S.folders)S.folders={};S.folders[k]=f;
+  set(ref(db,"cashbook/folders/"+k+"/note"),note).catch(function(e){alert("저장 실패: "+(e.message||e));});
+  S.folderNoteEdit=false;render();
+};
+// 견적 연결 모달
+window.openLinkQuote=function(co){S.linkCo=decodeURIComponent(co);S.modal="linkquote";render();};
+window.linkQuoteToFolder=function(qid){
+  var co=S.linkCo;var k=folderKey(co);
+  var f=getFolder(co);
+  var quotes=(f.quotes||[]).slice();
+  if(quotes.indexOf(qid)<0)quotes.push(qid);
+  if(!S.folders)S.folders={};S.folders[k]=Object.assign({},f,{quotes:quotes});
+  set(ref(db,"cashbook/folders/"+k+"/quotes"),quotes).catch(function(){});
+  S.modal=null;render();
+};
+window.unlinkQuote=function(co,qid){
+  co=decodeURIComponent(co);var k=folderKey(co);
+  var f=getFolder(co);
+  var quotes=(f.quotes||[]).filter(function(x){return x!==qid;});
+  S.folders[k]=Object.assign({},f,{quotes:quotes});
+  set(ref(db,"cashbook/folders/"+k+"/quotes"),quotes).catch(function(){});
+  render();
+};
+window.setPhotoCat=function(cat){S.photoCat=cat;render();};
+window.setPhotoSearch=function(v){S.photoSearch=v;render();};
+window.openPhotoFolder=function(co){S.photoOpenCo=decodeURIComponent(co);S.folderNoteEdit=false;render();window.scrollTo(0,0);};
+window.closePhotoFolder=function(){S.photoOpenCo=null;S.folderNoteEdit=false;render();};
+function compressImage(file,cb){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var maxW=1280;
+      var w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      var canvas=document.createElement("canvas");
+      canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL("image/jpeg",0.7));
+    };
+    img.onerror=function(){cb(null);};
+    img.src=e.target.result;
+  };
+  reader.onerror=function(){cb(null);};
+  reader.readAsDataURL(file);
+}
+function savePhotoFiles(files,co){
+  co=(co||"").trim();
+  if(!co){alert("상호명을 입력해주세요.");return;}
+  var arr=Array.prototype.slice.call(files);
+  if(!arr.length)return;
+  setSbar("ing");
+  var done=0;
+  arr.forEach(function(file){
+    compressImage(file,function(dataUrl){
+      if(dataUrl){
+        var pid=uid();
+        var rec={co:co,cat:S.photoCat,img:dataUrl,createdAt:new Date().toISOString()};
+        set(ref(db,"cashbook/photos/"+pid),rec).catch(function(){});
+      }
+      done++;
+      if(done===arr.length){setSbar("ok");}
+    });
+  });
+  alert(arr.length+"장의 사진을 업로드 중이에요.\\n잠시 후 폴더에 표시됩니다.");
+}
+window.uploadPhotosNew=function(input){
+  var co=document.getElementById("photo-co");
+  var coVal=co?co.value:S.photoUploadCo;
+  savePhotoFiles(input.files,coVal);
+  S.photoUploadCo="";
+  input.value="";
+};
+window.uploadPhotos=function(input,co){
+  savePhotoFiles(input.files,decodeURIComponent(co));
+  input.value="";
+};
+window.delPhoto=function(id){
+  if(!confirm("이 사진을 삭제하시겠습니까?"))return;
+  S.photos=(S.photos||[]).filter(function(p){return p.id!==id;});
+  set(ref(db,"cashbook/photos/"+id),null).catch(function(){});
+  render();
+};
+window.viewPhoto=function(id){
+  var p=(S.photos||[]).find(function(x){return x.id===id;});
+  if(!p)return;
+  var w=window.open("","_blank");
+  w.document.write('<html><head><title>'+esc(p.co||"")+' - '+esc(p.cat||"")+'</title><style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="'+p.img+'"></body></html>');
+  w.document.close();
+};
 window.showViewLog=function(id){S.viewLogQid=id;S.modal="viewlog";render();};
+function renderLinkQuoteModal(){
+  var co=S.linkCo||"";
+  var f=getFolder(co);
+  var linked=(f.quotes||[]);
+  // 견적 목록 (이미 연결된 건 제외 표시)
+  var list=[].concat(S.quotes||[]).sort(function(a,b){return (b.createdAt||"").localeCompare(a.createdAt||"");});
+  var rows=list.length?list.map(function(q){
+    var isLinked=linked.indexOf(q.id)>=0;
+    var st=QSTATUS[normStatus(q.status)];
+    var dt=q.createdAt?new Date(q.createdAt):null;
+    var dtStr=dt?(dt.getFullYear()+"."+String(dt.getMonth()+1).padStart(2,"0")+"."+String(dt.getDate()).padStart(2,"0")):"";
+    return '<div class="link-q-row '+(isLinked?"linked":"")+'" '+(isLinked?"":'onclick="linkQuoteToFolder(&apos;'+q.id+'&apos;)"')+'>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#191F28">'+esc(q.clientCo||"고객사")+' · '+fmtN(q.total||0)+'원</div><div style="font-size:10px;color:#8B95A1">'+dtStr+' · '+(q.mode==="monthly"?"월관리비":"판매")+'</div></div>'
+      +(isLinked?'<span style="font-size:11px;color:#15B886;font-weight:700">✓ 연결됨</span>':'<span class="qmgr-badge" style="background:'+st.bg+';color:'+st.color+'">'+st.label+'</span>')
+    +'</div>';
+  }).join(""):'<div style="text-align:center;color:#8B95A1;font-size:13px;padding:20px 0">발급된 견적서가 없어요</div>';
+  return '<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="max-width:420px"><div class="mhead"><h3>🔗 견적서 연결</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody">'
+    +'<div style="font-size:12px;color:#8B95A1;margin-bottom:14px">'+esc(co)+' 폴더에 연결할 견적서를 선택하세요</div>'
+    +'<div style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px">'+rows+'</div>'
+    +'</div></div></div>';
+}
 function renderViewLogModal(){
   var q=(S.quotes||[]).find(function(x){return x.id===S.viewLogQid;});
   if(!q)return "";
@@ -2142,7 +2403,7 @@ window.editQuote=function(id){
   QSALES={dept:d.salesDept||"",rank:d.salesRank||"",name:d.salesName||"",tel:d.salesTel||""};
   QSPECIAL=d.special||"";
   QSPECPRE=(d.specPre||[]).slice();
-  QDOCS={A:!!(d.docs&&d.docs.A),B:!!(d.docs&&d.docs.B)};
+  QDOCS={A:!!(d.docs&&d.docs.A),B:!!(d.docs&&d.docs.B)};QDOCS_EXTRA=d.docsExtra||"";
   ADJUST=(d.adjust||[]).map(function(a){return{id:uid(),label:a.label,amount:a.amount};});
   // 수량/가격 복원
   QTY={};QPRICE={};
