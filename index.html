@@ -55,6 +55,7 @@ html,body{font-family:'Pretendard Variable',Pretendard,-apple-system,'맑은 고
 
 /* ── 메인 레이아웃 ── */
 .main{max-width:760px;margin:0 auto;padding:120px 16px 90px}
+.main-wide{max-width:1100px}
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;background:var(--bg)}
 .spinner{width:32px;height:32px;border:3px solid #E5E8EB;border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
 .ltext{font-size:13px;color:var(--dim)}
@@ -858,7 +859,7 @@ function render(){
     +'<button class="btn-backup" onclick="openBackup()">💾 백업</button>'
     +'</div></div>'
     +'<div class="tabnav"><div class="tabnav-inner">'+tabHtml+'</div></div>'
-    +'<div class="main">'+body+'</div>'
+    +'<div class="main'+(S.tab==="ledger"?" main-wide":"")+'">'+body+'</div>'
     +'<nav class="bnav"><div class="bnavi">'+bnav+"</div></nav>";
 }
 window.sw=function(t){S.tab=t;render();window.scrollTo(0,0);};
@@ -902,7 +903,7 @@ function renderLedger(){
     +'</div></div>'
     +'<div class="ntable-wrap"><table class="nt"><thead><tr>'
     +'<th style="width:110px">날짜</th><th class="r" style="width:110px">입금</th><th class="r" style="width:110px">출금</th><th class="r" style="width:110px">잔액</th>'
-    +'<th style="width:110px">카테고리</th><th class="c" style="width:66px">세금계산서</th><th>비고</th><th style="width:56px"></th>'
+    +'<th style="width:100px">카테고리</th><th class="c" style="width:66px">세금계산서</th><th style="min-width:180px">비고</th><th style="width:56px"></th>'
     +'</tr></thead><tbody>'+rows+"</tbody>"+foot+"</table></div>"
     +'<div class="hint">입금 시 세금계산서 <b>발행여부</b> / 출금 시 <b>수신여부</b></div>'
     +"</div>";
