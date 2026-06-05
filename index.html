@@ -1094,6 +1094,7 @@ var ADJUST=[]; // 확정된 할인/조정 항목 {id, label, amount}
 var ADJFORM={label:"",amount:"",sign:-1}; // 입력 중인 할인 폼 (sign: -1=할인, 1=추가)
 var QPRICE={}; // 견적별 일회성 가격 오버라이드 {id:{sell, monthly}}
 var QSPECIAL=""; // 특약사항 (자유입력)
+var QINSTALL=""; // 설치 비고
 var QSPECPRE=[]; // 선택된 특약 항목 텍스트 배열
 var SPEC_DEFAULT=["무상 A/S 1년 (단, 사용자 과실 수리는 수리비 부담)","포스용지 25롤 / 50롤 유상구매 (초기물품 무상지원)","폐업 및 양도양수 시 견적 장비 반납 및 후사업자 계약 이관","포스용지 무상지원"];
 var SPEC_ITEMS=SPEC_DEFAULT.slice();
@@ -1363,6 +1364,14 @@ function renderQuote(){
       +'</div>'
     +'</div>'
 
+    // ④-1.5 설치 비고
+    +'<div class="qbox">'
+      +'<div class="qbox-head"><span class="qbox-title">🔧 설치 비고</span></div>'
+      +'<div style="padding:6px 20px 18px">'
+        +'<textarea class="qspecial-input" id="qm-install" placeholder="설치 관련 안내사항을 입력하세요\n예) 설치 예정일, 현장 준비사항, 전기 공사 필요 여부 등" oninput="setQInstall(this.value)">'+esc(QINSTALL)+'</textarea>'
+      +'</div>'
+    +'</div>'
+
     // ④-2 가맹서류 안내
     +'<div class="qbox">'
       +'<div class="qbox-head"><span class="qbox-title">📑 카드사 가맹서류 안내</span><span style="font-size:11px;color:#888">중복 선택 가능</span></div>'
@@ -1541,6 +1550,7 @@ function refreshQPanel(){
 window.refreshQ=function(){refreshQPanel();};
 window.setQM=function(m){QMODE=m;render();};
 window.setQSpecial=function(v){QSPECIAL=v;};
+window.setQInstall=function(v){QINSTALL=v;};
 window.toggleSpec=function(t){
   t=decodeURIComponent(t);
   var idx=QSPECPRE.indexOf(t);
@@ -1596,7 +1606,7 @@ window.onTelInput=function(el,target){
   else if(target==="sales")QSALES.tel=formatted;
 };
 window.resetQ=function(){
-  ADJUST=[];QPRICE={};QSPECIAL="";QSPECPRE=[];QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};QDOCS_EXTRA="";ADJFORM={label:"",amount:"",sign:-1};EDIT_QID=null;
+  ADJUST=[];QPRICE={};QSPECIAL="";QINSTALL="";QSPECPRE=[];QSALES={dept:"",rank:"",name:"",tel:""};QCLIENT={co:"",name:"",tel:""};QDOCS={A:false,B:false};QDOCS_EXTRA="";ADJFORM={label:"",amount:"",sign:-1};EDIT_QID=null;
   (S.products||PRODUCTS).forEach(function(p){QTY[p.id]=0;var el=document.getElementById("qi-"+p.id);if(el)el.value=0;updQRow(p.id);});
   ["qm-co","qm-name","qm-tel"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   refreshQPanel();
@@ -1631,6 +1641,7 @@ function collectQuoteData(){
     items:items,
     adjust:ADJUST.map(function(a){return{label:a.label,amount:Number(a.amount)||0};}),
     special:QSPECIAL,
+    install:QINSTALL,
     specPre:QSPECPRE.slice(),
     docs:{A:QDOCS.A,B:QDOCS.B},
     docsExtra:QDOCS_EXTRA,
@@ -1706,6 +1717,7 @@ function buildQuoteHtml(d,opts){
     esc(d.special).split("\n").forEach(function(ln){if(ln.trim())specLines.push("· "+ln);});
   }
   var specialHtml=specLines.length?'<div class="card" style="padding:18px 22px;margin-bottom:10px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:8px">특약사항</div><div style="font-size:12px;color:#4E5968;line-height:1.8">'+specLines.join("<br>")+'</div></div>':"";
+  var installHtml=(d.install||"").trim()?'<div class="card" style="padding:18px 22px;margin-bottom:10px"><div style="font-size:13px;font-weight:600;color:#191F28;margin-bottom:8px">🔧 설치 비고</div><div style="font-size:12px;color:#4E5968;line-height:1.8">'+esc(d.install).split("\n").join("<br>")+'</div></div>':"";
 
   // 가맹서류 안내
   var docsHtml="";
@@ -1790,6 +1802,7 @@ function buildQuoteHtml(d,opts){
       +'<div style="font-size:11px;color:#F04452;font-weight:600;margin-top:8px;text-align:center">※ 세금계산서는 입금월말에 발행됩니다.</div>'
     +'</div>'
     + specialHtml
+    + installHtml
     + docsHtml
     +'<div class="card" style="padding:18px 22px">'
       +'<div style="font-size:13px;font-weight:600;margin-bottom:10px">공급자 정보</div>'
@@ -2401,7 +2414,7 @@ window.editQuote=function(id){
   QMODE=d.mode||"sell";
   QCLIENT={co:d.clientCo||"",name:d.clientNm||"",tel:d.clientTel||""};
   QSALES={dept:d.salesDept||"",rank:d.salesRank||"",name:d.salesName||"",tel:d.salesTel||""};
-  QSPECIAL=d.special||"";
+  QSPECIAL=d.special||"";QINSTALL=d.install||"";
   QSPECPRE=(d.specPre||[]).slice();
   QDOCS={A:!!(d.docs&&d.docs.A),B:!!(d.docs&&d.docs.B)};QDOCS_EXTRA=d.docsExtra||"";
   ADJUST=(d.adjust||[]).map(function(a){return{id:uid(),label:a.label,amount:a.amount};});
