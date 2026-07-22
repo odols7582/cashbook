@@ -226,6 +226,7 @@ input.fiinput{display:none}
   .qmgr-wrap{padding:0 14px}
   .memo-wrap{padding:0 14px}
   .photo-wrap{padding:0 14px}
+  .settle-wrap{padding:0 14px}
   .kpi-grid{grid-template-columns:1fr 1fr;padding:0 14px}
   .result-grid{grid-template-columns:1fr}
   .tabnav-inner{padding:0 8px}
@@ -682,6 +683,20 @@ input.fiinput{display:none}
   .link-q-row{display:flex;align-items:center;gap:8px;background:#F9FAFB;border-radius:10px;padding:12px 14px;cursor:pointer;transition:background .15s}
   .link-q-row:hover:not(.linked){background:#EBF2FE}
   .link-q-row.linked{opacity:.6;cursor:default}
+
+  /* ── 가맹점정산 ── */
+  .settle-wrap{padding:0}
+  .settle-report-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .settle-rcard{border-radius:12px;padding:14px 16px}
+  .settle-rlabel{font-size:11px;color:#6B7684;font-weight:600;margin-bottom:6px}
+  .settle-rval{font-size:17px;font-weight:700}
+  .settle-store-list{display:flex;flex-direction:column;gap:10px}
+  .settle-store{background:#fff;border-radius:16px;padding:16px 18px;cursor:pointer;transition:background .15s}
+  .settle-store:hover{background:#F9FAFB}
+  .settle-store-name{font-size:15px;font-weight:700;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .settle-store-items{font-size:11px;color:#8B95A1;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .settle-store-van{font-size:16px;font-weight:700;color:#3182F6}
+  .settle-store-todo{font-size:11px;color:#F04452;font-weight:700;background:#FFF0F0;padding:4px 10px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -725,7 +740,7 @@ var PIN_INPUT=""; // 입력 중인 PIN
 var PIN_SETUP=false; // 설정 모드
 var PIN_SETUP_FIRST=""; // 설정 시 1차 입력값
 var PIN_ERR=""; // 오류 메시지
-var S={tab:"price",rows:[],todos:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},photos:[],photoSearch:"",photoOpenCo:null,photoUploadCo:"",photoCat:"설치현장",folders:{},folderNoteEdit:false,calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
+var S={tab:"price",rows:[],todos:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},photos:[],photoSearch:"",photoOpenCo:null,photoUploadCo:"",photoCat:"설치현장",folders:{},folderNoteEdit:false,stores:{},settleMonth:"",settleOpenId:null,calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
 function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");window.__lastError="저장 실패 ("+path+"): "+(e&&e.message?e.message:e);console.error("[저장실패]",path,e);alert("⚠️ 저장 실패\n\n"+(e&&e.message?e.message:e)+"\n\n로그인/권한 문제일 수 있어요.");}},400);}
@@ -820,6 +835,10 @@ async function loadAppData(){
       S.folders=sn.val()||{};
       render();
     });
+    onValue(ref(db,"cashbook/stores"),function(sn){
+      S.stores=sn.val()||{};
+      render();
+    });
     setSbar("ok");
   }catch(e){
     setSbar("err");
@@ -834,7 +853,7 @@ function render(){
   var root=document.getElementById("root");
   if(!root)return;
   var ac=S.todos.filter(function(t){return!t.done;}).length;
-  var tabs=[{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"memo",icon:"📝",label:"영업메모"},{id:"photo",icon:"📷",label:"사진보관"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
+  var tabs=[{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"settle",icon:"🏪",label:"가맹점정산"},{id:"memo",icon:"📝",label:"영업메모"},{id:"photo",icon:"📷",label:"사진보관"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
   var tabHtml=tabs.map(function(t){return'<button class="tabitem '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)">'+t.icon+" "+t.label+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)"><span class="nbtn-icon">'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var body="";
@@ -845,6 +864,7 @@ function render(){
   else if(S.tab==="qmgr")body=renderQuotesMgr();
   else if(S.tab==="memo")body=renderMemos();
   else if(S.tab==="photo")body=renderPhotos();
+  else if(S.tab==="settle")body=renderSettle();
   else if(S.tab==="todo")body=renderTodo();
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
@@ -2017,6 +2037,179 @@ function renderQuotesMgr(){
     +cards+'</div>';
 }
 window.setQMgrFilter=function(f){QMGRFILTER=f;render();};
+
+// ── 가맹점정산 탭 ──
+// 계약완료(done) 견적을 가맹점으로 취급. store 데이터는 cashbook/stores/{quoteId}에 저장
+// store = {rate, tossPromo, daily:{ "YYYY-MM": [{date,cnt,avg}] }}
+function curMonth(){return new Date().toISOString().slice(0,7);}
+function getStore(qid){return (S.stores&&S.stores[qid])||{};}
+// 견적 품목 → 표시용 요약
+function quoteItemsSummary(q){
+  if(!q||!q.data||!q.data.items)return "";
+  return q.data.items.map(function(it){return it.name+"×"+it.qty;}).join(", ");
+}
+// 이번 달 가맹점 밴피 계산
+function storeMonthVan(qid,ym){
+  var st=getStore(qid);
+  var rate=(st.rate!=null?st.rate:0)/100;
+  var days=(st.daily&&st.daily[ym])||[];
+  var sales=0,cnt=0;
+  days.forEach(function(d){var s=(Number(d.cnt)||0)*(Number(d.avg)||0);sales+=s;cnt+=(Number(d.cnt)||0);});
+  var van=Math.round(sales*rate);
+  return {sales:sales,cnt:cnt,van:van,promo:Number(st.tossPromo)||0};
+}
+function renderSettle(){
+  var ym=S.settleMonth||curMonth();
+  var doneQuotes=(S.quotes||[]).filter(function(q){return normStatus(q.status)==="done";});
+
+  // 상세 화면 (가맹점 열림)
+  if(S.settleOpenId){
+    var q=(S.quotes||[]).find(function(x){return x.id===S.settleOpenId;});
+    if(q)return renderStoreDetail(q,ym);
+    S.settleOpenId=null;
+  }
+
+  // 월 선택
+  var monthSel='<input type="month" class="memo-inp" value="'+ym+'" oninput="setSettleMonth(this.value)" style="width:auto;display:inline-block">';
+
+  // 리포트 요약
+  var totalVan=0,totalPromo=0,totalSales=0;
+  doneQuotes.forEach(function(q){var m=storeMonthVan(q.id,ym);totalVan+=m.van;totalPromo+=m.promo;totalSales+=m.sales;});
+  // 장부 이번 달 수익/지출
+  var monthRows=(S.rows||[]).filter(function(r){return (r.date||"").slice(0,7)===ym;});
+  var income=0,expense=0;
+  monthRows.forEach(function(r){income+=(Number(r.deposit)||0);expense+=(Number(r.withdraw)||0);});
+
+  var report='<div class="box" style="margin-bottom:14px"><div class="box-head"><span class="box-title">📊 '+ym.replace("-",". ")+' 정산 리포트</span>'+monthSel+'</div>'
+    +'<div style="padding:6px 20px 18px">'
+      +'<div class="settle-report-grid">'
+        +'<div class="settle-rcard" style="background:#EBF2FE"><div class="settle-rlabel">예상 밴 수수료</div><div class="settle-rval" style="color:#3182F6">'+fmtN(totalVan)+'원</div></div>'
+        +'<div class="settle-rcard" style="background:#FFF4E6"><div class="settle-rlabel">토스 프로모션</div><div class="settle-rval" style="color:#E68A00">'+fmtN(totalPromo)+'원</div></div>'
+      +'</div>'
+      +'<div class="settle-report-grid" style="margin-top:10px">'
+        +'<div class="settle-rcard" style="background:#E1F8F0"><div class="settle-rlabel">장부 수입 (이번달)</div><div class="settle-rval" style="color:#15B886">'+fmtN(income)+'원</div></div>'
+        +'<div class="settle-rcard" style="background:#FFF0F0"><div class="settle-rlabel">장부 지출 (이번달)</div><div class="settle-rval" style="color:#F04452">'+fmtN(expense)+'원</div></div>'
+      +'</div>'
+      +'<div style="margin-top:12px;padding:14px 16px;background:#191F28;border-radius:12px;display:flex;justify-content:space-between;align-items:center">'
+        +'<span style="font-size:13px;color:#B0B8C1;font-weight:600">예상 총 수익 (밴+프로모션+장부수입−지출)</span>'
+        +'<span style="font-size:18px;color:#fff;font-weight:700">'+fmtN(totalVan+totalPromo+income-expense)+'원</span>'
+      +'</div>'
+      +'<div style="font-size:10px;color:#B0B8C1;margin-top:8px;line-height:1.6">※ 밴 수수료는 입력한 건수·객단가·수수료율 기준 예상치예요. 실제 정산액과 다를 수 있어요.</div>'
+    +'</div></div>';
+
+  // 가맹점 목록
+  var storeList=doneQuotes.length===0
+    ? '<div class="epage"><div class="eicon">🏪</div><h3>등록된 가맹점이 없어요</h3><p>견적관리에서 견적을 <b>계약완료</b>로 변경하면<br>여기에 가맹점으로 표시됩니다</p></div>'
+    : '<div class="settle-store-list">'+doneQuotes.map(function(q){
+        var m=storeMonthVan(q.id,ym);
+        var st=getStore(q.id);
+        var hasRate=st.rate!=null&&st.rate!=="";
+        return '<div class="settle-store" onclick="openStore(&apos;'+q.id+'&apos;)">'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
+            +'<div style="min-width:0;flex:1">'
+              +'<div class="settle-store-name">'+esc(q.clientCo||"고객사")+'</div>'
+              +'<div class="settle-store-items">'+esc(quoteItemsSummary(q)||"품목 정보 없음")+'</div>'
+            +'</div>'
+            +'<div style="text-align:right;flex-shrink:0">'
+              +(hasRate?'<div class="settle-store-van">'+fmtN(m.van)+'원</div><div style="font-size:10px;color:#8B95A1">수수료 '+st.rate+'%</div>':'<span class="settle-store-todo">⚠️ 미설정</span>')
+            +'</div>'
+          +'</div>'
+        +'</div>';
+      }).join("")+'</div>';
+
+  return '<div class="settle-wrap">'+report
+    +'<div style="font-size:13px;font-weight:700;color:#191F28;margin:4px 4px 10px">🏪 가맹점 목록 ('+doneQuotes.length+')</div>'
+    +storeList+'</div>';
+}
+// 가맹점 상세 (일별 입력)
+function renderStoreDetail(q,ym){
+  var st=getStore(q.id);
+  var days=(st.daily&&st.daily[ym])||[];
+  var m=storeMonthVan(q.id,ym);
+  // 추천 수수료율: 수수료 계산기 테이블에서 못 가져오면 안내만
+  var rateVal=st.rate!=null?st.rate:"";
+
+  var dayRows=days.map(function(d,i){
+    var sale=(Number(d.cnt)||0)*(Number(d.avg)||0);
+    return '<tr>'
+      +'<td><input type="date" class="ci" value="'+(d.date||"")+'" onchange="updDay(&apos;'+q.id+'&apos;,'+i+',&apos;date&apos;,this.value)" style="color-scheme:light"></td>'
+      +'<td class="r"><input type="text" inputmode="numeric" class="ci nr" value="'+(d.cnt||"")+'" placeholder="0" onchange="updDay(&apos;'+q.id+'&apos;,'+i+',&apos;cnt&apos;,this.value)"></td>'
+      +'<td class="r"><input type="text" inputmode="numeric" class="ci nr" value="'+(d.avg||"")+'" placeholder="0" onchange="updDay(&apos;'+q.id+'&apos;,'+i+',&apos;avg&apos;,this.value)"></td>'
+      +'<td class="r" style="font-weight:600;color:#191F28">'+fmtN(sale)+'</td>'
+      +'<td class="ac"><button class="ib del" onclick="delDay(&apos;'+q.id+'&apos;,'+i+')">×</button></td>'
+    +'</tr>';
+  }).join("");
+
+  return '<div class="settle-wrap">'
+    +'<div class="box" style="margin-bottom:14px"><div style="padding:16px 20px;display:flex;align-items:center;gap:10px">'
+      +'<button onclick="closeStore()" style="background:#F2F4F6;border:none;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;font-family:inherit">←</button>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🏪 '+esc(q.clientCo||"고객사")+'</div><div style="font-size:11px;color:#8B95A1">'+esc(quoteItemsSummary(q))+'</div></div>'
+    +'</div></div>'
+    // 설정: 수수료율 + 프로모션
+    +'<div class="box" style="margin-bottom:14px"><div class="box-head"><span class="box-title">⚙️ 가맹점 설정</span></div><div style="padding:6px 20px 18px">'
+      +'<div style="display:flex;gap:10px;align-items:flex-end">'
+        +'<div style="flex:1"><div style="font-size:11px;color:#8B95A1;margin-bottom:5px">평균 수수료율 (%)</div><input type="text" inputmode="decimal" class="memo-inp" value="'+rateVal+'" placeholder="예: 1.5" onchange="setStoreField(&apos;'+q.id+'&apos;,&apos;rate&apos;,this.value)"></div>'
+        +'<div style="flex:1"><div style="font-size:11px;color:#8B95A1;margin-bottom:5px">토스 프로모션 (원)</div><input type="text" inputmode="numeric" class="memo-inp" value="'+(st.tossPromo||"")+'" placeholder="0" onchange="setStoreField(&apos;'+q.id+'&apos;,&apos;tossPromo&apos;,this.value)"></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:#B0B8C1;margin-top:8px">💡 수수료율은 수수료 계산 탭의 테이블을 참고해 입력하세요 (수기값)</div>'
+    +'</div></div>'
+    // 일별 입력
+    +'<div class="box" style="margin-bottom:14px"><div class="box-head"><span class="box-title">📅 '+ym.replace("-",". ")+' 일별 매출</span><button class="folder-link-btn" onclick="addDay(&apos;'+q.id+'&apos;)">+ 날짜 추가</button></div>'
+      +'<div style="padding:6px 12px 12px">'
+        +'<div class="ntable-wrap"><table class="nt"><thead><tr><th style="width:130px">날짜</th><th class="r">건수</th><th class="r">객단가</th><th class="r">매출</th><th style="width:44px"></th></tr></thead>'
+        +'<tbody>'+(days.length?dayRows:'<tr><td colspan="5" style="text-align:center;color:#8B95A1;padding:20px;font-size:13px">+ 날짜 추가로 일별 매출을 입력하세요</td></tr>')+'</tbody>'
+        +'<tfoot><tr><td style="font-weight:700">합계</td><td class="r" style="font-weight:700">'+fmtN(m.cnt)+'건</td><td></td><td class="r" style="font-weight:700">'+fmtN(m.sales)+'</td><td></td></tr></tfoot>'
+        +'</table></div>'
+      +'</div>'
+    +'</div>'
+    // 이 가맹점 이번 달 밴피
+    +'<div style="padding:16px 20px;background:#191F28;border-radius:16px;display:flex;justify-content:space-between;align-items:center">'
+      +'<div><div style="font-size:12px;color:#B0B8C1">이번 달 예상 밴 수수료</div><div style="font-size:10px;color:#8B95A1;margin-top:2px">매출 '+fmtN(m.sales)+'원 × '+(rateVal||0)+'%</div></div>'
+      +'<div style="font-size:22px;font-weight:700;color:#fff">'+fmtN(m.van)+'원</div>'
+    +'</div>'
+  +'</div>';
+}
+window.setSettleMonth=function(v){S.settleMonth=v;render();};
+window.openStore=function(id){S.settleOpenId=id;render();window.scrollTo(0,0);};
+window.closeStore=function(){S.settleOpenId=null;render();};
+window.setStoreField=function(qid,field,val){
+  var v=field==="rate"?(val===""?null:parseFloat(val)):(val===""?0:parseInt(val.replace(/[^0-9]/g,""),10)||0);
+  var st=Object.assign({},getStore(qid));st[field]=v;
+  if(!S.stores)S.stores={};S.stores[qid]=st;
+  set(ref(db,"cashbook/stores/"+qid+"/"+field),v).catch(function(e){alert("저장 실패: "+(e.message||e));});
+  render();
+};
+window.addDay=function(qid){
+  var ym=S.settleMonth||curMonth();
+  var st=Object.assign({},getStore(qid));
+  if(!st.daily)st.daily={};
+  var days=(st.daily[ym]||[]).slice();
+  days.push({date:ym+"-"+String(new Date().getDate()).padStart(2,"0"),cnt:"",avg:""});
+  st.daily[ym]=days;
+  if(!S.stores)S.stores={};S.stores[qid]=st;
+  set(ref(db,"cashbook/stores/"+qid+"/daily/"+ym),days).catch(function(){});
+  render();
+};
+window.updDay=function(qid,i,field,val){
+  var ym=S.settleMonth||curMonth();
+  var st=Object.assign({},getStore(qid));
+  if(!st.daily||!st.daily[ym])return;
+  var days=st.daily[ym].slice();
+  var v=(field==="cnt"||field==="avg")?(val.replace(/[^0-9]/g,"")):val;
+  days[i]=Object.assign({},days[i],{[field]:v});
+  st.daily[ym]=days;S.stores[qid]=st;
+  set(ref(db,"cashbook/stores/"+qid+"/daily/"+ym),days).catch(function(){});
+  render();
+};
+window.delDay=function(qid,i){
+  var ym=S.settleMonth||curMonth();
+  var st=Object.assign({},getStore(qid));
+  if(!st.daily||!st.daily[ym])return;
+  var days=st.daily[ym].slice();days.splice(i,1);
+  st.daily[ym]=days;S.stores[qid]=st;
+  set(ref(db,"cashbook/stores/"+qid+"/daily/"+ym),days).catch(function(){});
+  render();
+};
 
 // ── 영업메모 탭 ──
 function renderMemos(){
