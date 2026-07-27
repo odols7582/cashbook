@@ -763,6 +763,24 @@ const app=initializeApp(FC);
 const db=getDatabase(app);
 const auth=getAuth(app);
 
+// ── 앱 버전 정보 (배포할 때마다 갱신) ────────────────
+const APP_VERSION='v2.0.0';
+const APP_BUILD_DATE='2026-07-27 15:00';
+// 업데이트 내역 (최신순) — 배포할 때마다 맨 위에 추가
+const CHANGELOG=[
+  {v:'v2.0.0',d:'2026-07-27 15:00',items:['📊 대시보드 신설 — 통장 잔액 현황 + 계정 정보(주소·아이디·비밀번호·비고) 관리, 홈 화면으로 지정','상단에 버전 정보·업데이트 일자 표시 및 버전받아오기(전체 새로고침) 버튼 추가']}
+];
+window.openChangelog=function(){S.modal="changelog";render();};
+// 버전받아오기 — 캐시 비우고 최신 배포본 강제 로드
+window.forceRefresh=async function(){
+  try{
+    if('caches' in window){var keys=await caches.keys();await Promise.all(keys.map(function(k){return caches.delete(k);}));}
+    if('serviceWorker' in navigator){var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(function(r){return r.update();}));}
+  }catch(e){console.error('버전받아오기 오류:',e);}
+  var base=location.href.split('?')[0].split('#')[0];
+  location.replace(base+'?v='+Date.now());
+};
+
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function fmt(n){return(n==null||isNaN(n)||n===""?"":Number(n).toLocaleString("ko-KR"))}
 function today(){return new Date().toISOString().slice(0,10)}
@@ -786,13 +804,15 @@ var PIN_INPUT=""; // 입력 중인 PIN
 var PIN_SETUP=false; // 설정 모드
 var PIN_SETUP_FIRST=""; // 설정 시 1차 입력값
 var PIN_ERR=""; // 오류 메시지
-var S={tab:"price",rows:[],todos:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},photos:[],photoSearch:"",photoOpenCo:null,photoUploadCo:"",photoCat:"설치현장",folders:{},folderNoteEdit:false,stores:{},settleMonth:"",settleOpenId:null,calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
+var S={tab:"dash",rows:[],todos:[],accounts:[],credentials:[],quotes:[],memos:[],memoSearch:"",memoForm:{co:"",tel:"",content:""},photos:[],photoSearch:"",photoOpenCo:null,photoUploadCo:"",photoCat:"설치현장",folders:{},folderNoteEdit:false,stores:{},settleMonth:"",settleOpenId:null,calc:{rateIdx:null,rangeIdx:null,count:""},ledger:{fm:"all",fc:"all",search:""},todo:{filter:"active",showAdd:false,form:{title:"",priority:"mid",dueDate:"",memo:""}},modal:null,priceModal:{show:false,editId:null,form:{name:"",spec:"",buy:"",sell:"",monthly:"",monthlyNote:"별도",img:""}}};
 
 const ST={};
 function fbSave(path,data){clearTimeout(ST[path]);ST[path]=setTimeout(async function(){try{await set(ref(db,path),data);setSbar("ok");}catch(e){setSbar("err");window.__lastError="저장 실패 ("+path+"): "+(e&&e.message?e.message:e);console.error("[저장실패]",path,e);alert("⚠️ 저장 실패\n\n"+(e&&e.message?e.message:e)+"\n\n로그인/권한 문제일 수 있어요.");}},400);}
 function saveRows(){fbSave("cashbook/rows",S.rows);}
 function saveProducts(){fbSave("cashbook/products",S.products);}
 function saveTodos(){fbSave("cashbook/todos",S.todos);}
+function saveAccounts(){fbSave("cashbook/accounts",S.accounts);}
+function saveCredentials(){fbSave("cashbook/credentials",S.credentials);}
 function setSbar(st){var b=document.getElementById("sbar"),sp=document.getElementById("spill"),st2=document.getElementById("stxt");if(!b||!sp||!st2)return;sp.className="sync-pill "+st;if(st==="ok")st2.textContent="동기화 완료";else if(st==="ing")st2.textContent="연결 중";else st2.textContent="오프라인";}
 
 async function init(){
@@ -836,6 +856,8 @@ async function loadAppData(){
     }
     onValue(ref(db,"cashbook/rows"),function(sn){S.rows=sn.val()?Object.values(sn.val()):[];render();});
     onValue(ref(db,"cashbook/todos"),function(sn){S.todos=sn.val()?Object.values(sn.val()):[];render();});
+    onValue(ref(db,"cashbook/accounts"),function(sn){var v=sn.val();S.accounts=v?(Array.isArray(v)?v.filter(Boolean):Object.values(v)):[];if(!dashEditing())render();});
+    onValue(ref(db,"cashbook/credentials"),function(sn){var v=sn.val();S.credentials=v?(Array.isArray(v)?v.filter(Boolean):Object.values(v)):[];if(!dashEditing())render();});
     onValue(ref(db,"cashbook/company"),function(sn){
       if(sn.val()) COMPANY=Object.assign({},COMPANY,sn.val());
       render();
@@ -895,15 +917,83 @@ async function loadAppData(){
   }
 }
 
+// ── 업데이트 내역 모달 ───────────────────────────
+function renderChangelog(){
+  return '<div class="mbg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="max-width:420px"><div class="mhead"><h3>🆕 업데이트 내역</h3><button class="mclose" onclick="closeModal()">×</button></div><div class="mbody">'
+    +'<div style="font-size:11px;color:var(--dim);margin-bottom:12px">현재 버전 <b style="color:var(--blue)">'+APP_VERSION+'</b> · '+APP_BUILD_DATE+'</div>'
+    +CHANGELOG.map(function(c,i){return '<div style="margin-bottom:14px"><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span style="font-size:12px;font-weight:800;color:'+(i===0?'var(--blue)':'var(--ink)')+'">'+esc(c.v)+'</span>'+(i===0?'<span style="font-size:9px;font-weight:700;color:#fff;background:var(--blue);border-radius:99px;padding:1px 6px">최신</span>':'')+'<span style="font-size:10px;color:var(--dim);margin-left:auto">'+esc(c.d)+'</span></div>'+c.items.map(function(it){return '<div style="font-size:11px;color:var(--soft);line-height:1.6;padding-left:12px;position:relative"><span style="position:absolute;left:0;color:var(--blue)">•</span>'+esc(it)+'</div>';}).join('')+'</div>';}).join('')
+    +'</div><div class="mact"><button class="btn-green" style="flex:1" onclick="forceRefresh()">🔄 버전받아오기 (최신 버전 받기)</button><button class="btn-line" onclick="closeModal()">닫기</button></div></div></div>';
+}
+
+/* ── 대시보드 (홈) ─────────────── */
+// 대시보드 입력창 편집 중인지 — 서버 에코로 인한 포커스 이탈 방지
+function dashEditing(){var a=document.activeElement;return !!(a&&a.tagName==="INPUT"&&S.tab==="dash");}
+function renderDashboard(){
+  var accs=S.accounts||[], creds=S.credentials||[];
+  var total=accs.reduce(function(a,x){return a+(Number(x.balance)||0);},0);
+  var ip='border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13px;font-family:inherit;background:var(--paper);color:var(--ink);width:100%;box-sizing:border-box';
+  var lbl='font-size:11px;color:var(--dim);font-weight:600';
+  var h='<div class="kpi-grid" style="grid-template-columns:repeat(2,1fr)">'
+    +'<div class="kpi"><div class="kpi-label">💳 통장 총잔액</div><div class="kpi-val" style="color:var(--blue)">'+fmt(total)+'<span style="font-size:13px;font-weight:600">원</span></div><div class="kpi-sub">'+accs.length+'개 통장</div></div>'
+    +'<div class="kpi"><div class="kpi-label">🔑 등록 계정</div><div class="kpi-val">'+creds.length+'<span style="font-size:13px;font-weight:600">개</span></div><div class="kpi-sub">주소·아이디·비밀번호</div></div>'
+    +'</div>';
+  // 통장 잔액 현황
+  h+='<div class="box"><div class="box-head"><span class="box-title">💳 통장 잔액 현황</span><button class="btn-green" onclick="dashAddAccount()">+ 통장 추가</button></div><div class="box-body">';
+  if(!accs.length){ h+='<div style="padding:24px 0;text-align:center;color:var(--dim);font-size:13px">등록된 통장이 없어요. <b>+ 통장 추가</b>를 눌러 시작하세요.</div>'; }
+  else {
+    h+='<div class="ntable-wrap"><table class="nt"><thead><tr><th style="min-width:140px">은행 / 통장명</th><th style="min-width:120px">계좌번호</th><th style="text-align:right;min-width:120px">잔액(원)</th><th style="min-width:120px">비고</th><th></th></tr></thead><tbody>';
+    h+=accs.map(function(a){
+      return '<tr>'
+        +'<td><input value="'+esc(a.bank||'')+'" placeholder="예: 국민은행 주거래" onchange="dashAccField(&apos;'+a.id+'&apos;,&apos;bank&apos;,this.value)" style="'+ip+'"></td>'
+        +'<td><input value="'+esc(a.acct||'')+'" placeholder="계좌번호" onchange="dashAccField(&apos;'+a.id+'&apos;,&apos;acct&apos;,this.value)" style="'+ip+'"></td>'
+        +'<td><input inputmode="numeric" value="'+(a.balance!=null&&a.balance!==''?fmt(a.balance):'')+'" placeholder="0" onchange="dashAccField(&apos;'+a.id+'&apos;,&apos;balance&apos;,this.value)" style="'+ip+';text-align:right;font-variant-numeric:tabular-nums"></td>'
+        +'<td><input value="'+esc(a.memo||'')+'" placeholder="메모" onchange="dashAccField(&apos;'+a.id+'&apos;,&apos;memo&apos;,this.value)" style="'+ip+'"></td>'
+        +'<td><button class="btn-red" onclick="dashDelAccount(&apos;'+a.id+'&apos;)">삭제</button></td>'
+        +'</tr>';
+    }).join('');
+    h+='</tbody></table></div>';
+    h+='<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:10px;padding:14px 4px 2px;font-size:14px;font-weight:700"><span style="color:var(--soft)">합계</span><span style="color:var(--blue);font-variant-numeric:tabular-nums;font-size:17px">'+fmt(total)+' 원</span></div>';
+  }
+  h+='</div></div>';
+  // 계정 정보
+  h+='<div class="box"><div class="box-head"><span class="box-title">🔑 계정 정보</span><button class="btn-green" onclick="dashAddCred()">+ 계정 추가</button></div><div class="box-body">';
+  h+='<div style="font-size:11px;color:var(--orange);background:#FFF7EA;border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.5">⚠️ 비밀번호가 그대로 저장·표시돼요. 공용/타인 기기에서는 주의하세요.</div>';
+  if(!creds.length){ h+='<div style="padding:24px 0;text-align:center;color:var(--dim);font-size:13px">등록된 계정이 없어요. <b>+ 계정 추가</b>를 눌러 시작하세요.</div>'; }
+  else {
+    h+=creds.map(function(c){
+      return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">'
+        +'<div style="display:flex;gap:8px;margin-bottom:10px"><input value="'+esc(c.site||'')+'" placeholder="사이트/서비스명 (예: 국세청 홈택스)" onchange="dashCredField(&apos;'+c.id+'&apos;,&apos;site&apos;,this.value)" style="'+ip+';font-weight:700;font-size:14px"><button class="btn-red" onclick="dashDelCred(&apos;'+c.id+'&apos;)" style="flex-shrink:0">삭제</button></div>'
+        +'<div style="display:grid;gap:9px">'
+          +'<label style="display:block"><span style="'+lbl+'">주소(URL)</span><input value="'+esc(c.url||'')+'" placeholder="https://..." onchange="dashCredField(&apos;'+c.id+'&apos;,&apos;url&apos;,this.value)" style="'+ip+';margin-top:3px"></label>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">'
+            +'<label style="display:block"><span style="'+lbl+'">아이디</span><input value="'+esc(c.user||'')+'" placeholder="아이디" onchange="dashCredField(&apos;'+c.id+'&apos;,&apos;user&apos;,this.value)" style="'+ip+';margin-top:3px"></label>'
+            +'<label style="display:block"><span style="'+lbl+'">비밀번호</span><span style="display:flex;gap:4px;margin-top:3px"><input type="password" value="'+esc(c.pw||'')+'" placeholder="비밀번호" onchange="dashCredField(&apos;'+c.id+'&apos;,&apos;pw&apos;,this.value)" style="'+ip+'"><button type="button" class="btn-line" style="flex-shrink:0;padding:8px 10px" onclick="var i=this.previousElementSibling;i.type=(i.type===&apos;password&apos;?&apos;text&apos;:&apos;password&apos;);this.textContent=(i.type===&apos;password&apos;?&apos;👁&apos;:&apos;🙈&apos;)">👁</button></span></label>'
+          +'</div>'
+          +'<label style="display:block"><span style="'+lbl+'">비고</span><input value="'+esc(c.memo||'')+'" placeholder="메모 (예: OTP, 보안카드 위치 등)" onchange="dashCredField(&apos;'+c.id+'&apos;,&apos;memo&apos;,this.value)" style="'+ip+';margin-top:3px"></label>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+  h+='</div></div>';
+  return h;
+}
+window.dashAddAccount=function(){S.accounts.push({id:uid(),bank:"",acct:"",balance:null,memo:""});saveAccounts();render();};
+window.dashAccField=function(id,f,v){var a=(S.accounts||[]).find(function(x){return x.id===id;});if(!a)return;if(f==="balance"){var n=String(v).replace(/[^0-9.-]/g,"");a.balance=(n===""?null:Number(n));}else{a[f]=v;}saveAccounts();if(f==="balance")render();};
+window.dashDelAccount=function(id){if(!confirm("이 통장을 삭제할까요?"))return;S.accounts=(S.accounts||[]).filter(function(x){return x.id!==id;});saveAccounts();render();};
+window.dashAddCred=function(){S.credentials.push({id:uid(),site:"",url:"",user:"",pw:"",memo:""});saveCredentials();render();};
+window.dashCredField=function(id,f,v){var c=(S.credentials||[]).find(function(x){return x.id===id;});if(!c)return;c[f]=v;saveCredentials();};
+window.dashDelCred=function(id){if(!confirm("이 계정 정보를 삭제할까요?"))return;S.credentials=(S.credentials||[]).filter(function(x){return x.id!==id;});saveCredentials();render();};
+
 function render(){
   var root=document.getElementById("root");
   if(!root)return;
   var ac=S.todos.filter(function(t){return!t.done;}).length;
-  var tabs=[{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"settle",icon:"🏪",label:"가맹점정산"},{id:"memo",icon:"📝",label:"영업메모"},{id:"photo",icon:"📷",label:"사진보관"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
+  var tabs=[{id:"dash",icon:"📊",label:"대시보드"},{id:"price",icon:"💰",label:"가격표"},{id:"quote",icon:"📋",label:"견적서"},{id:"qmgr",icon:"📁",label:"견적관리"},{id:"settle",icon:"🏪",label:"가맹점정산"},{id:"memo",icon:"📝",label:"영업메모"},{id:"photo",icon:"📷",label:"사진보관"},{id:"todo",icon:"✓",label:"할일관리",badge:ac},{id:"calc",icon:"🧮",label:"수수료 계산"},{id:"ledger",icon:"📒",label:"입출금장부"}];
   var tabHtml=tabs.map(function(t){return'<button class="tabitem '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)">'+t.icon+" "+t.label+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var bnav=tabs.map(function(t){return'<button class="nbtn '+(S.tab===t.id?"on":"")+'" onclick="sw(&apos;'+t.id+'&apos;)"><span class="nbtn-icon">'+t.icon+"</span>"+t.label.slice(0,4)+(t.badge?'<span class="nbadge">'+t.badge+"</span>":"")+"</button>";}).join("");
   var body="";
-  if(S.tab==="ledger")body=renderLedger();
+  if(S.tab==="dash")body=renderDashboard();
+  else if(S.tab==="ledger")body=renderLedger();
   else if(S.tab==="calc")body=renderCalc();
   else if(S.tab==="price")body=renderPrice();
   else if(S.tab==="quote")body=renderQuote();
@@ -912,6 +1002,7 @@ function render(){
   else if(S.tab==="photo")body=renderPhotos();
   else if(S.tab==="settle")body=renderSettle();
   else if(S.tab==="todo")body=renderTodo();
+  if(S.modal==="changelog")body+=renderChangelog();
   if(S.modal==="backup")body+=renderBackup();
   if(S.modal==="share")body+=renderShareModal();
   if(S.modal==="install")body+=renderInstallModal();
@@ -919,8 +1010,9 @@ function render(){
   if(S.modal==="linkquote")body+=renderLinkQuoteModal();
   root.innerHTML=
     '<div class="topbar"><div class="topbar-inner">'
-    +'<a class="logo"><div class="logo-icon">'+(COMPANY.logo?'<img src="'+COMPANY.logo+'" style="width:100%;height:100%;object-fit:contain;border-radius:8px">':'장')+'</div><div><div class="logo-text">영업관리</div><div class="logo-sub">POS·VAN 대리점</div></div></a>'
+    +'<a class="logo"><div class="logo-icon">'+(COMPANY.logo?'<img src="'+COMPANY.logo+'" style="width:100%;height:100%;object-fit:contain;border-radius:8px">':'장')+'</div><div><div class="logo-text">영업관리</div><button onclick="openChangelog()" title="업데이트 내역 보기" style="background:none;border:none;padding:0;margin-top:1px;font-family:inherit;cursor:pointer;text-align:left;display:block"><span class="logo-sub" style="color:var(--blue);font-weight:600">'+APP_VERSION+' · '+APP_BUILD_DATE+' ⌄</span></button></div></a>'
     +'<div id="spill" class="sync-pill ing"><div class="sdot"></div><span id="stxt">연결 중</span></div>'
+    +'<button class="btn-backup" onclick="forceRefresh()" title="버전받아오기 (최신 버전 새로고침)">🔄</button>'
     +'<button class="btn-backup" onclick="changePin()" title="PIN 변경">🔒</button>'
     +'<button class="btn-backup" onclick="openBackup()">💾 백업</button>'
     +'</div></div>'
